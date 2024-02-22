@@ -59,8 +59,23 @@ Mesh *create_mesh(Sprite *sprite)
     return new_mesh;
 }
 
-void change_texture_coordinates(Mesh *mesh, int sprite_ind_x, int sprite_ind_y)
+void change_texture_coordinates(Mesh *mesh, int new_x_index, int new_y_index)
 {
+    int max_cols = mesh->sprite->spritesheet->cols;
+    int max_rows = mesh->sprite->spritesheet->rows;
+    if(new_x_index < 0 || new_x_index > max_cols)
+    {
+        fprintf(stderr, "ERROR: Sprite index x out of range!\n");
+        return;
+    }
+    if(new_y_index < 0 || new_y_index > max_rows)
+    {
+        fprintf(stderr, "ERROR: Sprite index y out of range!\n");
+        return;
+    }
+
+    change_sprite_offsets(mesh->sprite, new_x_index, new_y_index);
+
     //TEXTURE COORDINATES WORKING WITH SPRITESHEETS
     float tex_coordinates[8] = {
         mesh->sprite->bottom_left[0], mesh->sprite->bottom_left[1],
@@ -69,8 +84,10 @@ void change_texture_coordinates(Mesh *mesh, int sprite_ind_x, int sprite_ind_y)
         mesh->sprite->top_left[0], mesh->sprite->top_left[1]
     };
 
+    // Copy new texture data into mesh->buffer and then send the new buffer data to the GPU
     memcpy(mesh->tex_coordinates, tex_coordinates, sizeof(tex_coordinates));
-    change_sprite_offsets(mesh->sprite, sprite_ind_x, sprite_ind_y);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh->texture_coordinate_buffer);
+    glBufferSubData(GL_ARRAY_BUFFER, mesh->texture_coordinate_buffer, 0, (void*)mesh->tex_coordinates); 
 }
 
 void compile_shaders(Mesh *mesh)

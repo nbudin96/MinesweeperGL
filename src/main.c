@@ -14,11 +14,21 @@ int current_window_width = 800;
 int current_window_height = 800;
 bool running = true;
 
+
+//Temp Globals
+bool up_key_released = true;
+bool down_key_released = true;
+Spritesheet *global_spritesheet; 
+Sprite *test_sprite;
+Mesh *test_mesh;
+
 const char *program_name = "MinesweeperGL";
 
 void GLAPIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* user_param)
 {
+    fprintf(stderr, "\n");
     fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n", ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, severity, message );
+    fprintf(stderr, "\n");
 }
 
 void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -28,6 +38,32 @@ void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int acti
         case GLFW_KEY_ESCAPE:
             running = false;
             break;
+        case GLFW_KEY_UP:
+            if(action == GLFW_RELEASE)
+            {
+                up_key_released = true;
+            }
+            if(GLFW_PRESS && up_key_released)
+            {
+                up_key_released = false;
+                mods == GLFW_MOD_SHIFT ? 
+                    change_texture_coordinates(test_mesh, test_sprite->spritesheet_x_index + 1, test_sprite->spritesheet_y_index) : 
+                    change_texture_coordinates(test_mesh, test_sprite->spritesheet_x_index, test_sprite->spritesheet_y_index + 1);
+                break;
+            }
+        case GLFW_KEY_DOWN:
+            if(action == GLFW_RELEASE)
+            {
+                down_key_released = true;
+            }
+            if(action == GLFW_PRESS && down_key_released)
+            {
+                down_key_released = false;
+                mods == GLFW_MOD_SHIFT ? 
+                    change_texture_coordinates(test_mesh, test_sprite->spritesheet_x_index - 1, test_sprite->spritesheet_y_index) : 
+                    change_texture_coordinates(test_mesh, test_sprite->spritesheet_x_index, test_sprite->spritesheet_y_index - 1);
+                break;
+            }
     }
 }
 
@@ -72,12 +108,12 @@ int main(int argc, char *args[])
     glDebugMessageCallback(opengl_message_callback, 0);
 
     // Only need to load this once btw, all of our objects will be accessing this one texture in memory
-    Spritesheet *global_spritesheet = create_spritesheet("./assets/spritesheets/minesweeper.png", 3, 4);
+    Spritesheet *global_spritesheet = create_spritesheet("./assets/spritesheets/minesweeper.png", 4, 3);
     //Spritesheet *global_spritesheet = create_spritesheet("./assets/spritesheets/Tiles.png", 3, 3);
 
     // Testing creating meshes and sprites off of one global spritesheet
-    Sprite *test_sprite = create_sprite(global_spritesheet, 3, 0);
-    Mesh *test_mesh = create_mesh(test_sprite);
+    test_sprite = create_sprite(global_spritesheet, 0, 0);
+    test_mesh = create_mesh(test_sprite);
 
     //TEXTURE LOADING
     glGenTextures(1, &global_spritesheet->texture);
