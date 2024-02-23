@@ -7,7 +7,6 @@
 Mesh *create_mesh(Sprite *sprite)
 {
     Mesh *new_mesh = malloc(sizeof(Mesh));
-    new_mesh->sprite = sprite;
 
     float initial_vertices[12] =
     {
@@ -23,10 +22,10 @@ Mesh *create_mesh(Sprite *sprite)
 
     //TEXTURE COORDINATES WORKING WITH SPRITESHEETS
     float tex_coordinates[8] = {
-        new_mesh->sprite->bottom_left[0], new_mesh->sprite->bottom_left[1],
-        new_mesh->sprite->bottom_right[0], new_mesh->sprite->bottom_right[1],
-        new_mesh->sprite->top_right[0], new_mesh->sprite->top_right[1],
-        new_mesh->sprite->top_left[0], new_mesh->sprite->top_left[1]
+        sprite->bottom_left[0], sprite->bottom_left[1],
+        sprite->bottom_right[0],sprite->bottom_right[1],
+        sprite->top_right[0], sprite->top_right[1],
+        sprite->top_left[0], sprite->top_left[1]
     };
 
     memcpy(new_mesh->vertices, initial_vertices, sizeof(initial_vertices));
@@ -62,10 +61,10 @@ Mesh *create_mesh(Sprite *sprite)
     return new_mesh;
 }
 
-void change_texture_coordinates(Mesh *mesh, int new_x_index, int new_y_index)
+void change_texture_coordinates(Sprite *sprite, int new_x_index, int new_y_index)
 {
-    int max_cols = mesh->sprite->spritesheet->cols;
-    int max_rows = mesh->sprite->spritesheet->rows;
+    int max_cols = sprite->spritesheet->cols;
+    int max_rows = sprite->spritesheet->rows;
     if(new_x_index < 0 || new_x_index > max_cols)
     {
         fprintf(stderr, "ERROR: Sprite index x out of range!\n");
@@ -77,20 +76,20 @@ void change_texture_coordinates(Mesh *mesh, int new_x_index, int new_y_index)
         return;
     }
 
-    change_sprite_offsets(mesh->sprite, new_x_index, new_y_index);
+    change_sprite_offsets(sprite, new_x_index, new_y_index);
 
     //TEXTURE COORDINATES WORKING WITH SPRITESHEETS
     float tex_coordinates[8] = {
-        mesh->sprite->bottom_left[0], mesh->sprite->bottom_left[1],
-        mesh->sprite->bottom_right[0], mesh->sprite->bottom_right[1],
-        mesh->sprite->top_right[0], mesh->sprite->top_right[1],
-        mesh->sprite->top_left[0], mesh->sprite->top_left[1]
+        sprite->bottom_left[0], sprite->bottom_left[1],
+        sprite->bottom_right[0], sprite->bottom_right[1],
+        sprite->top_right[0], sprite->top_right[1],
+        sprite->top_left[0], sprite->top_left[1]
     };
 
     // Copy new texture data into mesh->buffer and then send the new buffer data to the GPU
-    memcpy(mesh->tex_coordinates, tex_coordinates, sizeof(tex_coordinates));
-    glBindBuffer(GL_ARRAY_BUFFER, mesh->texture_coordinate_buffer);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, 8 * sizeof(float), (void*)mesh->tex_coordinates); 
+    memcpy(sprite->mesh->tex_coordinates, tex_coordinates, sizeof(tex_coordinates));
+    glBindBuffer(GL_ARRAY_BUFFER, sprite->mesh->texture_coordinate_buffer);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 8 * sizeof(float), (void*)sprite->mesh->tex_coordinates); 
 }
 
 void compile_shaders(Mesh *mesh)
@@ -216,10 +215,14 @@ void calculate_texture_offsets(Sprite *sprite)
 Sprite *create_sprite(Spritesheet *spritesheet, int x_index, int y_index)
 {
     Sprite *new_sprite = malloc(sizeof(Sprite));
+    Mesh *new_mesh = create_mesh(new_sprite);
+    new_sprite->mesh = new_mesh;
     new_sprite->spritesheet = spritesheet;
     calculate_sprite_size(new_sprite, new_sprite->spritesheet->cols, new_sprite->spritesheet->rows);
     new_sprite->spritesheet_x_index = x_index;
     new_sprite->spritesheet_y_index = y_index;
+    new_sprite->scale_x = 1.0f;
+    new_sprite->scale_y = 1.0f;
     calculate_texture_offsets(new_sprite);
     return new_sprite;
 }
@@ -229,4 +232,21 @@ void change_sprite_offsets(Sprite *sprite, int new_x_index, int new_y_index)
     sprite->spritesheet_x_index = new_x_index;
     sprite->spritesheet_y_index = new_y_index;
     calculate_texture_offsets(sprite);
+}
+
+void scale_sprite(Sprite *sprite, float scale_x, float scale_y)
+{
+    sprite->scale_x = scale_x;
+    sprite->scale_y = scale_y;
+    return;
+}
+
+void draw_sprite(Sprite *sprite) {
+
+    //update unfiforms
+    glUniform2f(glGetUniformLocation(sprite->mesh->shader_program, "scale"), sprite->scale_x, sprite->scale_y);
+
+    glUseProgram(sprite->mesh->shader_program);//here
+    glBindVertexArray(sprite->mesh->vertex_array_object);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }

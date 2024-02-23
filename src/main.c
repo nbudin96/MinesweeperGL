@@ -19,7 +19,6 @@ bool up_key_released = true;
 bool down_key_released = true;
 Spritesheet *global_spritesheet; 
 Sprite *test_sprite;
-Mesh *test_mesh;
 
 const char *program_name = "MinesweeperGL";
 
@@ -46,8 +45,8 @@ void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int acti
             {
                 up_key_released = false;
                 mods == GLFW_MOD_SHIFT ? 
-                    change_texture_coordinates(test_mesh, test_sprite->spritesheet_x_index + 1, test_sprite->spritesheet_y_index) : 
-                    change_texture_coordinates(test_mesh, test_sprite->spritesheet_x_index, test_sprite->spritesheet_y_index + 1);
+                    change_texture_coordinates(test_sprite, test_sprite->spritesheet_x_index + 1, test_sprite->spritesheet_y_index) : 
+                    change_texture_coordinates(test_sprite, test_sprite->spritesheet_x_index, test_sprite->spritesheet_y_index + 1);
                 break;
             }
         case GLFW_KEY_DOWN:
@@ -59,8 +58,8 @@ void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int acti
             {
                 down_key_released = false;
                 mods == GLFW_MOD_SHIFT ? 
-                    change_texture_coordinates(test_mesh, test_sprite->spritesheet_x_index - 1, test_sprite->spritesheet_y_index) : 
-                    change_texture_coordinates(test_mesh, test_sprite->spritesheet_x_index, test_sprite->spritesheet_y_index - 1);
+                    change_texture_coordinates(test_sprite, test_sprite->spritesheet_x_index - 1, test_sprite->spritesheet_y_index) : 
+                    change_texture_coordinates(test_sprite, test_sprite->spritesheet_x_index, test_sprite->spritesheet_y_index - 1);
                 break;
             }
     }
@@ -112,7 +111,6 @@ int main(int argc, char *args[])
 
     // Testing creating meshes and sprites off of one global spritesheet
     test_sprite = create_sprite(global_spritesheet, 0, 0);
-    test_mesh = create_mesh(test_sprite);
 
     //TEXTURE LOADING
     glGenTextures(1, &global_spritesheet->texture);
@@ -127,18 +125,18 @@ int main(int argc, char *args[])
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, global_spritesheet->width, global_spritesheet->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, global_spritesheet->data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    glUseProgram(test_mesh->shader_program);
-    glUniform1i(glGetUniformLocation(test_mesh->shader_program, "current_texture"), 0); // set it manually
+    glUseProgram(test_sprite->mesh->shader_program);
+    glUniform1i(glGetUniformLocation(test_sprite->mesh->shader_program, "current_texture"), 0); // set it manually
+
+
+    scale_sprite(test_sprite, 0.25f, 0.25f);
 
     while(running && !glfwWindowShouldClose(current_window))
     {
         glClear(GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, global_spritesheet->texture);
-
-        glUseProgram(test_mesh->shader_program);//here
-        glBindVertexArray(test_mesh->vertex_array_object);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        draw_sprite(test_sprite);
 
         glfwSwapBuffers(current_window);
         glfwPollEvents();
