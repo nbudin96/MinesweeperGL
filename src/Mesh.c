@@ -87,7 +87,7 @@ void change_texture_coordinates(Mesh *mesh, int new_x_index, int new_y_index)
     // Copy new texture data into mesh->buffer and then send the new buffer data to the GPU
     memcpy(mesh->tex_coordinates, tex_coordinates, sizeof(tex_coordinates));
     glBindBuffer(GL_ARRAY_BUFFER, mesh->texture_coordinate_buffer);
-    glBufferSubData(GL_ARRAY_BUFFER, mesh->texture_coordinate_buffer, 0, (void*)mesh->tex_coordinates); 
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 8 * sizeof(float), (void*)mesh->tex_coordinates); 
 }
 
 void compile_shaders(Mesh *mesh)
