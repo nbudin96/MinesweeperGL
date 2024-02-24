@@ -61,37 +61,6 @@ Mesh *create_mesh(Sprite *sprite)
     return new_mesh;
 }
 
-void change_texture_coordinates(Sprite *sprite, int new_x_index, int new_y_index)
-{
-    int max_cols = sprite->spritesheet->cols;
-    int max_rows = sprite->spritesheet->rows;
-    if(new_x_index < 0 || new_x_index > max_cols)
-    {
-        fprintf(stderr, "ERROR: Sprite index x out of range!\n");
-        return;
-    }
-    if(new_y_index < 0 || new_y_index > max_rows)
-    {
-        fprintf(stderr, "ERROR: Sprite index y out of range!\n");
-        return;
-    }
-
-    change_sprite_offsets(sprite, new_x_index, new_y_index);
-
-    //TEXTURE COORDINATES WORKING WITH SPRITESHEETS
-    float tex_coordinates[8] = {
-        sprite->bottom_left[0], sprite->bottom_left[1],
-        sprite->bottom_right[0], sprite->bottom_right[1],
-        sprite->top_right[0], sprite->top_right[1],
-        sprite->top_left[0], sprite->top_left[1]
-    };
-
-    // Copy new texture data into mesh->buffer and then send the new buffer data to the GPU
-    memcpy(sprite->mesh->tex_coordinates, tex_coordinates, sizeof(tex_coordinates));
-    glBindBuffer(GL_ARRAY_BUFFER, sprite->mesh->texture_coordinate_buffer);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, 8 * sizeof(float), (void*)sprite->mesh->tex_coordinates); 
-}
-
 void compile_shaders(Mesh *mesh)
 {
     //SHADERS
@@ -169,11 +138,65 @@ void free_spritesheet(Spritesheet *spritesheet)
     free(spritesheet);
 }
 
+// Creates a sprite from a spritesheet
+Sprite *create_sprite(Spritesheet *spritesheet, int x_index, int y_index, int screen_width, int screen_height)
+{
+    Sprite *new_sprite = malloc(sizeof(Sprite));
+    new_sprite->spritesheet = spritesheet;
+    new_sprite->spritesheet_x_index = x_index;
+    new_sprite->spritesheet_y_index = y_index;
+    new_sprite->screen_width = screen_width;
+    new_sprite->screen_height = screen_height;
+    calculate_sprite_size(new_sprite, new_sprite->spritesheet->cols, new_sprite->spritesheet->rows);
+    set_sprite_position(new_sprite, 0, 0);
+    calculate_texture_offsets(new_sprite);
+    new_sprite->scale_x = 1.0f;
+    new_sprite->scale_y = 1.0f;
+
+    Mesh *new_mesh = create_mesh(new_sprite);
+    new_sprite->mesh = new_mesh;
+    return new_sprite;
+}
+
 // Calculates indv. size of the sprite located in the spritesheet and stores in Sprite struct
 void calculate_sprite_size(Sprite *sprite, int cols, int rows)
 {
     sprite->sprite_width = sprite->spritesheet->width / cols;
     sprite->sprite_height = sprite->spritesheet->height / rows;
+}
+
+void set_sprite_texture(Sprite *sprite, int new_x_index, int new_y_index)
+{
+    int max_cols = sprite->spritesheet->cols;
+    int max_rows = sprite->spritesheet->rows;
+    if(new_x_index < 0 || new_x_index >= max_cols)
+    {
+        fprintf(stderr, "ERROR: Sprite index x out of range!\n");
+        return;
+    }
+    if(new_y_index < 0 || new_y_index >= max_rows)
+    {
+        fprintf(stderr, "ERROR: Sprite index y out of range!\n");
+        return;
+    }
+
+    sprite->spritesheet_x_index = new_x_index;
+    sprite->spritesheet_y_index = new_y_index;
+    calculate_texture_offsets(sprite);
+
+    //TEXTURE COORDINATES WORKING WITH SPRITESHEETS
+    //This is creating tex_coords to send to the mesh
+    float tex_coordinates[8] = {
+        sprite->bottom_left[0], sprite->bottom_left[1],
+        sprite->bottom_right[0], sprite->bottom_right[1],
+        sprite->top_right[0], sprite->top_right[1],
+        sprite->top_left[0], sprite->top_left[1]
+    };
+
+    // Copy new texture data into mesh->buffer and then send the new buffer data to the GPU
+    memcpy(sprite->mesh->tex_coordinates, tex_coordinates, sizeof(tex_coordinates));
+    glBindBuffer(GL_ARRAY_BUFFER, sprite->mesh->texture_coordinate_buffer);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, 8 * sizeof(float), (void*)sprite->mesh->tex_coordinates); 
 }
 
 // Calculates the pixel offset (x and y) of the sprite's location in the spritesheet and stores in the Sprite's struct
@@ -211,40 +234,37 @@ void calculate_texture_offsets(Sprite *sprite)
     printf("Sprite_top_right y : %f\n\n", sprite->top_right[1]);
 }
 
-// Creates a sprite from a spritesheet
-Sprite *create_sprite(Spritesheet *spritesheet, int x_index, int y_index)
-{
-    Sprite *new_sprite = malloc(sizeof(Sprite));
-    Mesh *new_mesh = create_mesh(new_sprite);
-    new_sprite->mesh = new_mesh;
-    new_sprite->spritesheet = spritesheet;
-    calculate_sprite_size(new_sprite, new_sprite->spritesheet->cols, new_sprite->spritesheet->rows);
-    new_sprite->spritesheet_x_index = x_index;
-    new_sprite->spritesheet_y_index = y_index;
-    new_sprite->scale_x = 1.0f;
-    new_sprite->scale_y = 1.0f;
-    calculate_texture_offsets(new_sprite);
-    return new_sprite;
-}
-
-void change_sprite_offsets(Sprite *sprite, int new_x_index, int new_y_index)
-{
-    sprite->spritesheet_x_index = new_x_index;
-    sprite->spritesheet_y_index = new_y_index;
-    calculate_texture_offsets(sprite);
-}
-
 void scale_sprite(Sprite *sprite, float scale_x, float scale_y)
 {
     sprite->scale_x = scale_x;
     sprite->scale_y = scale_y;
-    return;
 }
 
-void draw_sprite(Sprite *sprite) {
+//TODO
+// Probably want to change with from screen to normalized device coordinates:
+// (XPosition - ScreenWidth / 2) / ScreenWidth OR (Xpos/SW) - 2
+// -(YPosition - ScreenHeight / 2) / ScreenHeight OR (Ypos/SH) - 2
+void set_sprite_position(Sprite *sprite, float new_position_x, float new_position_y)
+{
+    sprite->position_x = new_position_x;
+    sprite->position_y = new_position_y;
 
-    //update unfiforms
+    // Convert to normalized device coordinates
+    /**
+    sprite->normalized_position_x = (new_position_x / sprite->screen_width) - 0.5;
+    sprite->normalized_position_y = (new_position_y / sprite->screen_height) - 0.5;
+    **/
+    sprite->normalized_position_x = (new_position_x - (sprite->screen_width / 2.0f)) / (sprite->screen_width / 2.0f);
+    sprite->normalized_position_y = -(new_position_y - (sprite->screen_height / 2.0f)) / (sprite->screen_height / 2.0f);
+}
+
+void draw_sprite(Sprite *sprite, int screen_width, int screen_height) {
+    sprite->screen_width = screen_width;
+    sprite->screen_height = screen_height;
+
+    //update uniforms
     glUniform2f(glGetUniformLocation(sprite->mesh->shader_program, "scale"), sprite->scale_x, sprite->scale_y);
+    glUniform2f(glGetUniformLocation(sprite->mesh->shader_program, "sprite_position"), sprite->normalized_position_x, sprite->normalized_position_y);
 
     glUseProgram(sprite->mesh->shader_program);//here
     glBindVertexArray(sprite->mesh->vertex_array_object);

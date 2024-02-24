@@ -8,11 +8,18 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../include/headers/stb_image.h"
 
-GLFWwindow *current_window;
-int current_window_width = 800;
-int current_window_height = 800;
-bool running = true;
 
+typedef struct GameState {
+    GLFWwindow *current_window;
+    int current_window_width;
+    int current_window_height;
+    bool running;
+    float start_frame_time;
+    float end_frame_time;
+    float delta;
+} GameState;
+
+GameState global_state;
 
 //Temp Globals
 bool up_key_released = true;
@@ -34,32 +41,30 @@ void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int acti
     switch(key)
     {
         case GLFW_KEY_ESCAPE:
-            running = false;
+            global_state.running = false;
             break;
         case GLFW_KEY_UP:
-            if(action == GLFW_RELEASE)
+            if(action == GLFW_PRESS)
             {
-                up_key_released = true;
-            }
-            if(GLFW_PRESS && up_key_released)
-            {
-                up_key_released = false;
-                mods == GLFW_MOD_SHIFT ? 
-                    change_texture_coordinates(test_sprite, test_sprite->spritesheet_x_index + 1, test_sprite->spritesheet_y_index) : 
-                    change_texture_coordinates(test_sprite, test_sprite->spritesheet_x_index, test_sprite->spritesheet_y_index + 1);
+                set_sprite_position(test_sprite, test_sprite->position_x, test_sprite->position_y - 10.0f);
                 break;
             }
         case GLFW_KEY_DOWN:
-            if(action == GLFW_RELEASE)
+            if(action == GLFW_PRESS)
             {
-                down_key_released = true;
+                set_sprite_position(test_sprite, test_sprite->position_x, test_sprite->position_y + 10.0f);
+                break;
             }
-            if(action == GLFW_PRESS && down_key_released)
+        case GLFW_KEY_LEFT:
+            if(action == GLFW_PRESS)
             {
-                down_key_released = false;
-                mods == GLFW_MOD_SHIFT ? 
-                    change_texture_coordinates(test_sprite, test_sprite->spritesheet_x_index - 1, test_sprite->spritesheet_y_index) : 
-                    change_texture_coordinates(test_sprite, test_sprite->spritesheet_x_index, test_sprite->spritesheet_y_index - 1);
+                set_sprite_position(test_sprite, test_sprite->position_x + -10.0f, test_sprite->position_y);
+                break;
+            }
+        case GLFW_KEY_RIGHT:
+            if(action == GLFW_PRESS)
+            {
+                set_sprite_position(test_sprite, test_sprite->position_x + 10.0f, test_sprite->position_y);
                 break;
             }
     }
@@ -67,9 +72,9 @@ void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int acti
 
 void window_size_callback(GLFWwindow *window, int width, int height)
 {
-    current_window_width = width;
-    current_window_height = height;
-    glViewport(0, 0, current_window_width, current_window_height);
+    global_state.current_window_width = width;
+    global_state.current_window_height = height;
+    glViewport(0, 0, global_state.current_window_width, global_state.current_window_height);
 }
 
 void window_close_callback(GLFWwindow *window)
@@ -79,28 +84,32 @@ void window_close_callback(GLFWwindow *window)
 
 int main(int argc, char *args[])
 {
+    global_state.current_window_width = 800;
+    global_state.current_window_height = 800;
+    global_state.running = true;
+
     if(!glfwInit())
     {
         fprintf(stderr, "ERROR, GLFW FAILED TO INITIALIZE! EXITING...\n");
         return 1;
     }
 
-    current_window = glfwCreateWindow(current_window_width, current_window_height, program_name, NULL, NULL);
+    global_state.current_window = glfwCreateWindow(global_state.current_window_width, global_state.current_window_height, program_name, NULL, NULL);
 
-    if(!current_window)
+    if(!global_state.current_window)
     {
         fprintf(stderr, "ERROR, GLFW FAILED TO CREATE A WINDOW! EXITING...\n");
         return 1;
     }
 
-    glfwMakeContextCurrent(current_window);
+    glfwMakeContextCurrent(global_state.current_window);
     gladLoadGL();
 
-    glfwSetKeyCallback(current_window, keyboard_input_callback);
-    glfwSetWindowSizeCallback(current_window, window_size_callback);
-    glfwSetWindowCloseCallback(current_window, window_close_callback);
+    glfwSetKeyCallback(global_state.current_window, keyboard_input_callback);
+    glfwSetWindowSizeCallback(global_state.current_window, window_size_callback);
+    glfwSetWindowCloseCallback(global_state.current_window, window_close_callback);
 
-    glViewport(0, 0, current_window_width, current_window_height);
+    glViewport(0, 0, global_state.current_window_width, global_state.current_window_height);
     glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
     glEnable(GL_DEBUG_OUTPUT);
     glDebugMessageCallback(opengl_message_callback, 0);
@@ -110,7 +119,7 @@ int main(int argc, char *args[])
     //Spritesheet *global_spritesheet = create_spritesheet("./assets/spritesheets/Tiles.png", 3, 3);
 
     // Testing creating meshes and sprites off of one global spritesheet
-    test_sprite = create_sprite(global_spritesheet, 0, 0);
+    test_sprite = create_sprite(global_spritesheet, 0, 0, global_state.current_window_width, global_state.current_window_height);
 
     //TEXTURE LOADING
     glGenTextures(1, &global_spritesheet->texture);
@@ -128,20 +137,25 @@ int main(int argc, char *args[])
     glUseProgram(test_sprite->mesh->shader_program);
     glUniform1i(glGetUniformLocation(test_sprite->mesh->shader_program, "current_texture"), 0); // set it manually
 
-
     scale_sprite(test_sprite, 0.25f, 0.25f);
+    set_sprite_position(test_sprite, (float)global_state.current_window_width / 2.0f, (float)global_state.current_window_height / 2.0f);
+    //set_sprite_position(test_sprite, 0.0f, 0.0f);
+    //set_sprite_position(test_sprite, (float)global_state.current_window_width, (float)global_state.current_window_height);
 
-    while(running && !glfwWindowShouldClose(current_window))
+    while(global_state.running && !glfwWindowShouldClose(global_state.current_window))
     {
+        global_state.start_frame_time = glfwGetTime();
         glClear(GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, global_spritesheet->texture);
-        draw_sprite(test_sprite);
+        draw_sprite(test_sprite, global_state.current_window_width, global_state.current_window_height);
 
-        glfwSwapBuffers(current_window);
+        glfwSwapBuffers(global_state.current_window);
         glfwPollEvents();
+        global_state.end_frame_time = glfwGetTime();
+        global_state.delta = global_state.end_frame_time - global_state.start_frame_time;
     }
 
-    glfwDestroyWindow(current_window);
+    glfwDestroyWindow(global_state.current_window);
     return 0;
 }
