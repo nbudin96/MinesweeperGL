@@ -158,13 +158,15 @@ Sprite *create_sprite(Spritesheet *spritesheet, int x_index, int y_index, int sc
     return new_sprite;
 }
 
-// Calculates indv. size of the sprite located in the spritesheet and stores in Sprite struct
+// Calculates indv. size of a sprite located in the spritesheet and stores in Sprite struct
 void calculate_sprite_size(Sprite *sprite, int cols, int rows)
 {
     sprite->sprite_width = sprite->spritesheet->width / cols;
     sprite->sprite_height = sprite->spritesheet->height / rows;
 }
 
+// Sets the sprite's texture based on the spritesheet x and y index
+// Lower left of spritesheet is origin (0,0)
 void set_sprite_texture(Sprite *sprite, int new_x_index, int new_y_index)
 {
     int max_cols = sprite->spritesheet->cols;
@@ -200,6 +202,7 @@ void set_sprite_texture(Sprite *sprite, int new_x_index, int new_y_index)
 }
 
 // Calculates the pixel offset (x and y) of the sprite's location in the spritesheet and stores in the Sprite's struct
+// This essentially picks a sprite out of the spritesheet
 void calculate_texture_offsets(Sprite *sprite)
 {
     printf("Sprite Width: %d\n", sprite->sprite_width);
@@ -234,16 +237,15 @@ void calculate_texture_offsets(Sprite *sprite)
     printf("Sprite_top_right y : %f\n\n", sprite->top_right[1]);
 }
 
+// Scales the sprite by the passed amount
 void scale_sprite(Sprite *sprite, float scale_x, float scale_y)
 {
     sprite->scale_x = scale_x;
     sprite->scale_y = scale_y;
 }
 
-//TODO
-// Probably want to change with from screen to normalized device coordinates:
-// (XPosition - ScreenWidth / 2) / ScreenWidth OR (Xpos/SW) - 2
-// -(YPosition - ScreenHeight / 2) / ScreenHeight OR (Ypos/SH) - 2
+// Sets the sprite's position in screen coordinates
+// This function converts screen coords to normalized device coordinates and stores those in the sprite struct as well
 void set_sprite_position(Sprite *sprite, float new_position_x, float new_position_y)
 {
     sprite->position_x = new_position_x;
@@ -258,6 +260,7 @@ void set_sprite_position(Sprite *sprite, float new_position_x, float new_positio
     sprite->normalized_position_y = -(new_position_y - (sprite->screen_height / 2.0f)) / (sprite->screen_height / 2.0f);
 }
 
+// Draws the sprite. Updates uniforms: sprite_position, scale so that the sprite's postiion and scale are used in shader
 void draw_sprite(Sprite *sprite, int screen_width, int screen_height) {
     sprite->screen_width = screen_width;
     sprite->screen_height = screen_height;
