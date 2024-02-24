@@ -149,41 +149,33 @@ Sprite *create_sprite(Spritesheet *spritesheet, int x_index, int y_index, int sc
     new_sprite->screen_width = screen_width;
     new_sprite->screen_height = screen_height;
     set_sprite_position(new_sprite, 0, 0);
+    calculate_texture_offsets(new_sprite);
     new_sprite->scale_x = 1.0f;
     new_sprite->scale_y = 1.0f;
-    calculate_sprite_size(new_sprite);
-    calculate_texture_offsets(new_sprite);
 
     Mesh *new_mesh = create_mesh(new_sprite);
     new_sprite->mesh = new_mesh;
+    calculate_sprite_size(new_sprite, new_sprite->spritesheet->cols, new_sprite->spritesheet->rows);
     return new_sprite;
 }
 
 // Calculates indv. size of a sprite located in the spritesheet and stores in Sprite struct
-void calculate_sprite_size(Sprite *sprite)
+// TODO actually calculate this based on the mesh's vertices position
+void calculate_sprite_size(Sprite *sprite, int cols, int rows)
 {
-    // Since we are using a distance of 1 between each vertex, you don't need this below
-    //float x_distance = sprite->mesh->vertices[3] - sprite->mesh->vertices[0];
-    //float y_distance = sprite->mesh->vertices[7] - sprite->mesh->vertices[4];
-    //float x_distance_scaled = x_distance * sprite->scale_x;
-    //float y_distance_scaled =  y_distance * sprite->scale_y;
-    //float x_distance_scaled = sprite->scale_x;
-    //float y_distance_scaled = sprite->scale_y;
+    // take difference between meshes right - left, top - bottom
+    // apply sprite's scale
+    // transform to screen coordinates
+    float x_distance = sprite->mesh->vertices[3] - sprite->mesh->vertices[0];
+    float y_distance = sprite->mesh->vertices[7] - sprite->mesh->vertices[4];
+    printf("Y Distance : %f, X Distance : %f\n", y_distance, x_distance);
 
-    //convert to screen size
-    sprite->sprite_width = (sprite->scale_x * (sprite->screen_width / 2.0f));
-    sprite->sprite_height = (sprite->scale_y * (sprite->screen_height / 2.0f));
-}
 
-// This should manipulate the scale factor so that sprite size is set to passed pixel sizes
-void set_sprite_size(Sprite *sprite, int pixels_x, int pixels_y)
-{
-    // See above "calculate_sprite_size" comments for reasons this calc is so simple
-    sprite->sprite_width = pixels_x;
-    sprite->sprite_height = pixels_y;
 
-    sprite->scale_x = (float)sprite->sprite_width / ((float)sprite->screen_width / 2.0f);
-    sprite->scale_y = (float)sprite->sprite_height / ((float)sprite->screen_height / 2.0f);
+
+
+    sprite->sprite_width = sprite->spritesheet->width / cols;
+    sprite->sprite_height = sprite->spritesheet->height / rows;
 }
 
 // Sets the sprite's texture based on the spritesheet x and y index
@@ -224,37 +216,35 @@ void set_sprite_texture(Sprite *sprite, int new_x_index, int new_y_index)
 
 // Calculates the pixel offset (x and y) of the sprite's location in the spritesheet and stores in the Sprite's struct
 // This essentially picks a sprite out of the spritesheet
-// TODO : Add spritesheet sprite size to spritesheet struct (Replace all 16's below with this)
 void calculate_texture_offsets(Sprite *sprite)
 {
     printf("Sprite Width: %d\n", sprite->sprite_width);
     printf("Sprite Height: %d\n", sprite->sprite_height);
-
     printf("New X index : %d, New Y index : %d\n\n", sprite->spritesheet_x_index, sprite->spritesheet_y_index);
-    sprite->bottom_left[0] = (float)(sprite->spritesheet_x_index * 16);
+    sprite->bottom_left[0] = (float)(sprite->spritesheet_x_index * sprite->sprite_width);
     sprite->bottom_left[0] = sprite->bottom_left[0] / (float)sprite->spritesheet->width;
-    sprite->bottom_left[1] = (float)(sprite->spritesheet_y_index * 16);
+    sprite->bottom_left[1] = (float)(sprite->spritesheet_y_index * sprite->sprite_height);
     sprite->bottom_left[1] = sprite->bottom_left[1] / (float)sprite->spritesheet->height;
     printf("Sprite_bottom_left x : %f\n", sprite->bottom_left[0]);
     printf("Sprite_bottom_left y : %f\n", sprite->bottom_left[1]);
 
-    sprite->bottom_right[0] = (float)((sprite->spritesheet_x_index * 16) + 16);
+    sprite->bottom_right[0] = (float)((sprite->spritesheet_x_index * sprite->sprite_width) + sprite->sprite_width);
     sprite->bottom_right[0] = sprite->bottom_right[0] / (float)sprite->spritesheet->width;
-    sprite->bottom_right[1] = (float)(sprite->spritesheet_y_index * 16);
+    sprite->bottom_right[1] = (float)(sprite->spritesheet_y_index * sprite->sprite_height);
     sprite->bottom_right[1] = sprite->bottom_right[1] / (float)sprite->spritesheet->height;
     printf("Sprite_bottom_right x : %f\n", sprite->bottom_right[0]);
     printf("Sprite_bottom_right y : %f\n", sprite->bottom_right[1]);
 
-    sprite->top_left[0] = (float)((sprite->spritesheet_x_index * 16));
+    sprite->top_left[0] = (float)((sprite->spritesheet_x_index * sprite->sprite_width));
     sprite->top_left[0] = sprite->top_left[0] / (float)sprite->spritesheet->width;
-    sprite->top_left[1] = (float)((sprite->spritesheet_y_index * 16) + 16);
+    sprite->top_left[1] = (float)((sprite->spritesheet_y_index * sprite->sprite_height) + sprite->sprite_height);
     sprite->top_left[1] = sprite->top_left[1] / (float)sprite->spritesheet->height;
     printf("Sprite_top_left x : %f\n", sprite->top_left[0]);
     printf("Sprite_top_left y : %f\n", sprite->top_left[1]);
 
-    sprite->top_right[0] = (float)((sprite->spritesheet_x_index * 16) + 16);
+    sprite->top_right[0] = (float)((sprite->spritesheet_x_index * sprite->sprite_width) + sprite->sprite_width);
     sprite->top_right[0] = sprite->top_right[0] / (float)sprite->spritesheet->width;
-    sprite->top_right[1] = (float)((sprite->spritesheet_y_index * 16) + 16);
+    sprite->top_right[1] = (float)((sprite->spritesheet_y_index * sprite->sprite_height) + sprite->sprite_height);
     sprite->top_right[1] = sprite->top_right[1] / (float)sprite->spritesheet->height;
     printf("Sprite_top_right x : %f\n", sprite->top_right[0]);
     printf("Sprite_top_right y : %f\n\n", sprite->top_right[1]);
@@ -268,7 +258,6 @@ void scale_sprite(Sprite *sprite, float scale_x, float scale_y)
     sprite->scale_y = scale_y;
     sprite->sprite_width = sprite->sprite_width * scale_x;
     sprite->sprite_height = sprite->sprite_height * scale_y;
-    calculate_sprite_size(sprite);
 }
 
 // Sets the sprite's position in screen coordinates
@@ -279,6 +268,10 @@ void set_sprite_position(Sprite *sprite, float new_position_x, float new_positio
     sprite->position_y = new_position_y;
 
     // Convert to normalized device coordinates
+    /**
+    sprite->normalized_position_x = (new_position_x / sprite->screen_width) - 0.5;
+    sprite->normalized_position_y = (new_position_y / sprite->screen_height) - 0.5;
+    **/
     sprite->normalized_position_x = (new_position_x - (sprite->screen_width / 2.0f)) / (sprite->screen_width / 2.0f);
     sprite->normalized_position_y = -(new_position_y - (sprite->screen_height / 2.0f)) / (sprite->screen_height / 2.0f);
 }

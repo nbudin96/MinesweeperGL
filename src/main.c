@@ -119,7 +119,8 @@ int main(int argc, char *args[])
     //Spritesheet *global_spritesheet = create_spritesheet("./assets/spritesheets/Tiles.png", 3, 3);
 
     // Testing creating meshes and sprites off of one global spritesheet
-    test_sprite = create_sprite(global_spritesheet, 0, 0, global_state.current_window_width, global_state.current_window_height);
+    test_sprite = create_sprite(global_spritesheet, 3, 0, global_state.current_window_width, global_state.current_window_height);
+    Sprite *test_sprite_2 = create_sprite(global_spritesheet, 2, 0, global_state.current_window_width, global_state.current_window_height);
 
     //TEXTURE LOADING
     glGenTextures(1, &global_spritesheet->texture);
@@ -137,8 +138,10 @@ int main(int argc, char *args[])
     glUseProgram(test_sprite->mesh->shader_program);
     glUniform1i(glGetUniformLocation(test_sprite->mesh->shader_program, "current_texture"), 0); // set it manually
 
-    scale_sprite(test_sprite, 0.25f, 0.25f);
     set_sprite_position(test_sprite, (float)global_state.current_window_width / 2.0f, (float)global_state.current_window_height / 2.0f);
+    set_sprite_size(test_sprite, 32, 32);
+    set_sprite_position(test_sprite_2, (float)global_state.current_window_width / 2.0f + 32, (float)global_state.current_window_height / 2.0f + 32);
+    set_sprite_size(test_sprite_2, 32, 32);
     //set_sprite_position(test_sprite, 0.0f, 0.0f);
     //set_sprite_position(test_sprite, (float)global_state.current_window_width, (float)global_state.current_window_height);
 
@@ -149,6 +152,7 @@ int main(int argc, char *args[])
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, global_spritesheet->texture);
         draw_sprite(test_sprite, global_state.current_window_width, global_state.current_window_height);
+        draw_sprite(test_sprite_2, global_state.current_window_width, global_state.current_window_height);
 
         glfwSwapBuffers(global_state.current_window);
         glfwPollEvents();
