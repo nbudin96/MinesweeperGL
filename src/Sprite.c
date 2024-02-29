@@ -304,6 +304,15 @@ void set_sprite_position(Sprite *sprite, float new_position_x, float new_positio
     sprite->normalized_position_y = -(new_position_y - (sprite->screen_height / 2.0f)) / (sprite->screen_height / 2.0f);
 }
 
+// Returns the sprite's position calculated from normalized device coordinates
+// This is dependent on the Sprite's screen width and height fields being accurate!
+void get_sprite_position(Sprite *sprite, float *position_x, float *position_y)
+{
+    // Convert from normalized device coordinates to regular screen coords
+    *position_x = (int)(sprite->normalized_position_x * ((float)sprite->screen_width / 2) + (float)sprite->screen_width / 2);
+    *position_y = (int)(-sprite->normalized_position_y * ((float)sprite->screen_height / 2) + (float)sprite->screen_height / 2);
+}
+
 // Draws the sprite. Updates uniforms: sprite_position, scale so that the sprite's postiion and scale are used in shader
 void draw_sprite(Sprite *sprite, int screen_width, int screen_height) {
     // Update the screen size in case it was resized and the sprite size needs to be recalculated
@@ -314,6 +323,7 @@ void draw_sprite(Sprite *sprite, int screen_width, int screen_height) {
         set_sprite_position(sprite, sprite->position_x, sprite->position_y);
     }
     set_sprite_scale(sprite, sprite->scale_x, sprite->scale_y);
+    get_sprite_position(sprite, &sprite->position_x, &sprite->position_y);
 
     //update uniforms
     glUniform2f(glGetUniformLocation(sprite->mesh->shader_program, "scale"), sprite->scale_x, sprite->scale_y);
