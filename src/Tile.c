@@ -7,6 +7,7 @@ Tile *create_tile(Sprite *sprite)
     new_tile->active = false;
     new_tile->wants_hover = true;
     new_tile->highlight_amt = 0.3f;
+    new_tile->click_amt = -0.1f;
     new_tile->sprite = sprite;
     return new_tile;
 } 
@@ -29,13 +30,30 @@ bool check_mouse_hover(Tile *tile, double mouse_x, double mouse_y)
     return false;
 }
 
-void highlight_tile(Tile *tile, bool highlighted)
+void highlight_tile(Tile *tile)
+{
+    add_coloring(tile, tile->highlight_amt);
+}
+
+void unhighlight_tile(Tile *tile)
+{
+    add_coloring(tile, 0.0f);
+}
+
+void click_tile(Tile *tile)
+{
+    add_coloring(tile, tile->click_amt);
+    tile->active = true;
+}
+
+void unclick_tile(Tile *tile)
+{
+    add_coloring(tile, 0.0f);
+    tile->active = false;
+}
+
+void add_coloring(Tile *tile, float color)
 {
     glUseProgram(tile->sprite->mesh->shader_program);
-    if(highlighted)
-    {
-        glUniform4f(glGetUniformLocation(tile->sprite->mesh->shader_program, "hover_amt"), tile->highlight_amt, tile->highlight_amt, tile->highlight_amt, 1.0f);
-        return;
-    }
-    glUniform4f(glGetUniformLocation(tile->sprite->mesh->shader_program, "hover_amt"), 0.0f, 0.0f, 0.0f, 1.0f);
+    glUniform4f(glGetUniformLocation(tile->sprite->mesh->shader_program, "hover_amt"), color, color, color, 1.0f);
 }

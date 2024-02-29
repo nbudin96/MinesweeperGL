@@ -28,6 +28,7 @@ bool up_key_released = true;
 bool down_key_released = true;
 Spritesheet *global_spritesheet; 
 Sprite *test_sprite;
+Tile **tiles;
 
 const char *program_name = "MinesweeperGL";
 
@@ -36,6 +37,20 @@ void GLAPIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, G
     fprintf(stderr, "\n");
     fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n", ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, severity, message );
     fprintf(stderr, "\n");
+}
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+{
+    if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        for(int i = 0; i < 2; i++)
+        {
+            if(tiles[i]->mouse_hover)
+            {
+                click_tile(tiles[i]);
+                printf("CLICK");
+            }
+        }
+    }
 }
 
 void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -93,13 +108,16 @@ void update_tiles(Tile** tiles, GameState *gamestate)
     {
         // Check for input or mouse hover
         check_mouse_hover(tiles[i], gamestate->mouse_x, gamestate->mouse_y);
-        if(tiles[i]->mouse_hover)
+        if(!tiles[i]->active)
         {
-            highlight_tile(tiles[i], true);
-        }
-        else
-        {
-            highlight_tile(tiles[i], false);
+            if(tiles[i]->mouse_hover)
+            {
+                highlight_tile(tiles[i]);
+            }
+            else
+            {
+                unhighlight_tile(tiles[i]);
+            }
         }
 
         //draw sprites
@@ -133,6 +151,7 @@ int main(int argc, char *args[])
     glfwSetKeyCallback(global_state.current_window, keyboard_input_callback);
     glfwSetWindowSizeCallback(global_state.current_window, window_size_callback);
     glfwSetWindowCloseCallback(global_state.current_window, window_close_callback);
+    glfwSetMouseButtonCallback(global_state.current_window, mouse_button_callback);
 
     glViewport(0, 0, global_state.current_window_width, global_state.current_window_height);
     glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
@@ -151,7 +170,7 @@ int main(int argc, char *args[])
     set_sprite_position(test_sprite_2, (float)global_state.current_window_width / 2.0f + 32, (float)global_state.current_window_height / 2.0f + 32);
     set_sprite_size(test_sprite_2, 32, 32);
 
-    Tile **tiles = malloc(sizeof(Tile *) * 2);
+    tiles = malloc(sizeof(Tile *) * 2);
     tiles[0] = create_tile(test_sprite);
     tiles[1] = create_tile(test_sprite_2);
 
