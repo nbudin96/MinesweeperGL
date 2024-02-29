@@ -107,13 +107,27 @@ Spritesheet *create_spritesheet(const char *filename, int cols, int rows)
     Spritesheet *spritesheet = calloc(1, sizeof(Spritesheet));
     spritesheet->cols = cols;
     spritesheet->rows = rows;
-    if(load_spritesheet(spritesheet, filename))
+    if(!load_spritesheet(spritesheet, filename))
     {
-        return spritesheet;
+        fprintf(stderr, "ERROR: could not create spritesheet!\n");
+        free(spritesheet);
+        return NULL;
     }
-    fprintf(stderr, "ERROR: could not create spritesheet!\n");
-    free(spritesheet);
-    return NULL;
+
+    //TEXTURE LOADING
+    glGenTextures(1, &spritesheet->texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, spritesheet->texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, spritesheet->width, spritesheet->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, spritesheet->data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    return spritesheet;
 }
 
 // Loads an image into memory of the spritesheet
@@ -143,6 +157,7 @@ void free_spritesheet(Spritesheet *spritesheet)
 Sprite *create_sprite(Spritesheet *spritesheet, int x_index, int y_index, int screen_width, int screen_height)
 {
     Sprite *new_sprite = malloc(sizeof(Sprite));
+    new_sprite->keep_relative_position = true;
     new_sprite->spritesheet = spritesheet;
     new_sprite->spritesheet_x_index = x_index;
     new_sprite->spritesheet_y_index = y_index;
@@ -154,8 +169,14 @@ Sprite *create_sprite(Spritesheet *spritesheet, int x_index, int y_index, int sc
     calculate_sprite_size(new_sprite);
     calculate_texture_offsets(new_sprite);
 
+    // Create and attach the mesh for the quad
     Mesh *new_mesh = create_mesh(new_sprite);
     new_sprite->mesh = new_mesh;
+
+    // Set the spritesheet you are using
+    glUseProgram(new_sprite->mesh->shader_program);
+    glUniform1i(glGetUniformLocation(new_sprite->mesh->shader_program, "current_texture"), 0); // set it manually
+                                                                                               //
     return new_sprite;
 }
 
@@ -285,8 +306,14 @@ void set_sprite_position(Sprite *sprite, float new_position_x, float new_positio
 
 // Draws the sprite. Updates uniforms: sprite_position, scale so that the sprite's postiion and scale are used in shader
 void draw_sprite(Sprite *sprite, int screen_width, int screen_height) {
+    // Update the screen size in case it was resized and the sprite size needs to be recalculated
     sprite->screen_width = screen_width;
     sprite->screen_height = screen_height;
+    if(!sprite->keep_relative_position)
+    {
+        set_sprite_position(sprite, sprite->position_x, sprite->position_y);
+    }
+    scale_sprite(sprite, sprite->scale_x, sprite->scale_y);
 
     //update uniforms
     glUniform2f(glGetUniformLocation(sprite->mesh->shader_program, "scale"), sprite->scale_x, sprite->scale_y);

@@ -82,17 +82,25 @@ void window_close_callback(GLFWwindow *window)
     printf("Closing window...\n");
 }
 
+void update_sprites(Sprite** sprites, GameState gamestate)
+{
+    for(int i = 0; i < 2; i++)
+    {
+        draw_sprite(sprites[i], gamestate.current_window_width, gamestate.current_window_height);
+    }
+}
+
 int main(int argc, char *args[])
 {
-    global_state.current_window_width = 800;
-    global_state.current_window_height = 800;
+    global_state.current_window_width = 1280;
+    global_state.current_window_height = 720;
     global_state.running = true;
 
     if(!glfwInit())
     {
         fprintf(stderr, "ERROR, GLFW FAILED TO INITIALIZE! EXITING...\n");
         return 1;
-    }
+    } 
 
     global_state.current_window = glfwCreateWindow(global_state.current_window_width, global_state.current_window_height, program_name, NULL, NULL);
 
@@ -116,34 +124,19 @@ int main(int argc, char *args[])
 
     // Only need to load this once btw, all of our objects will be accessing this one texture in memory
     Spritesheet *global_spritesheet = create_spritesheet("./assets/spritesheets/minesweeper.png", 4, 3);
-    //Spritesheet *global_spritesheet = create_spritesheet("./assets/spritesheets/Tiles.png", 3, 3);
 
     // Testing creating meshes and sprites off of one global spritesheet
     test_sprite = create_sprite(global_spritesheet, 3, 0, global_state.current_window_width, global_state.current_window_height);
     Sprite *test_sprite_2 = create_sprite(global_spritesheet, 2, 0, global_state.current_window_width, global_state.current_window_height);
 
-    //TEXTURE LOADING
-    glGenTextures(1, &global_spritesheet->texture);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, global_spritesheet->texture);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, global_spritesheet->width, global_spritesheet->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, global_spritesheet->data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
-    glUseProgram(test_sprite->mesh->shader_program);
-    glUniform1i(glGetUniformLocation(test_sprite->mesh->shader_program, "current_texture"), 0); // set it manually
-
     set_sprite_position(test_sprite, (float)global_state.current_window_width / 2.0f, (float)global_state.current_window_height / 2.0f);
     set_sprite_size(test_sprite, 32, 32);
     set_sprite_position(test_sprite_2, (float)global_state.current_window_width / 2.0f + 32, (float)global_state.current_window_height / 2.0f + 32);
     set_sprite_size(test_sprite_2, 32, 32);
-    //set_sprite_position(test_sprite, 0.0f, 0.0f);
-    //set_sprite_position(test_sprite, (float)global_state.current_window_width, (float)global_state.current_window_height);
+
+    Sprite **sprites = malloc(sizeof(Sprite *) * 2);
+    sprites[0] = test_sprite;
+    sprites[1] = test_sprite_2;
 
     while(global_state.running && !glfwWindowShouldClose(global_state.current_window))
     {
@@ -151,8 +144,7 @@ int main(int argc, char *args[])
         glClear(GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, global_spritesheet->texture);
-        draw_sprite(test_sprite, global_state.current_window_width, global_state.current_window_height);
-        draw_sprite(test_sprite_2, global_state.current_window_width, global_state.current_window_height);
+        update_sprites(sprites, global_state);
 
         glfwSwapBuffers(global_state.current_window);
         glfwPollEvents();

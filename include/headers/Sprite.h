@@ -22,20 +22,21 @@ typedef struct Spritesheet {
 } Spritesheet;
 
 typedef struct Sprite {
+    bool keep_relative_position;
     int sprite_height;
     int sprite_width;
+    int spritesheet_x_index;
+    int spritesheet_y_index;
+    int screen_width;
+    int screen_height;
     float scale_x;
     float scale_y;
     float position_x;
     float position_y;
     float normalized_position_x;
     float normalized_position_y;
-    Spritesheet *spritesheet;
-    int spritesheet_x_index;
-    int spritesheet_y_index;
-    int screen_width;
-    int screen_height;
     float top_left[2], bottom_left[2], top_right[2], bottom_right[2];
+    Spritesheet *spritesheet;
     Mesh *mesh;
 } Sprite;
 
