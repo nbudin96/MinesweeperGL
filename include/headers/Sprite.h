@@ -55,6 +55,6 @@ void set_sprite_size(Sprite *sprite, int pixels_x, int pixels_y);
 void set_sprite_texture(Sprite *sprite, int new_x_index, int new_y_index); 
 void calculate_texture_offsets(Sprite *sprite);
 
-void scale_sprite(Sprite *sprite, float scale_x, float scale_y);
+void set_sprite_scale(Sprite *sprite, float scale_x, float scale_y);
 void set_sprite_position(Sprite *sprite, float new_position_x, float new_position_y);
 void draw_sprite(Sprite *sprite, int screen_width, int screen_height);

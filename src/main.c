@@ -1,6 +1,7 @@
 #include "../include/headers/glad.h"
 #include "../include/headers/glfw3.h"
 #include "../include/headers/Sprite.h"
+#include "../include/headers/Tile.h"
 #include "../include/headers/Shader.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -17,6 +18,7 @@ typedef struct GameState {
     float start_frame_time;
     float end_frame_time;
     float delta;
+    double mouse_x, mouse_y;
 } GameState;
 
 GameState global_state;
@@ -82,11 +84,26 @@ void window_close_callback(GLFWwindow *window)
     printf("Closing window...\n");
 }
 
-void update_sprites(Sprite** sprites, GameState gamestate)
+void update_tiles(Tile** tiles, GameState *gamestate)
 {
+    // Get the current mouse position
+    glfwGetCursorPos(gamestate->current_window, &gamestate->mouse_x, &gamestate->mouse_y);
+
     for(int i = 0; i < 2; i++)
     {
-        draw_sprite(sprites[i], gamestate.current_window_width, gamestate.current_window_height);
+        // Check for input or mouse hover
+        check_mouse_hover(tiles[i], gamestate->mouse_x, gamestate->mouse_y);
+        if(tiles[i]->mouse_hover)
+        {
+            highlight_tile(tiles[i], true);
+        }
+        else
+        {
+            highlight_tile(tiles[i], false);
+        }
+
+        //draw sprites
+        draw_sprite(tiles[i]->sprite, gamestate->current_window_width, gamestate->current_window_height);
     }
 }
 
@@ -134,9 +151,9 @@ int main(int argc, char *args[])
     set_sprite_position(test_sprite_2, (float)global_state.current_window_width / 2.0f + 32, (float)global_state.current_window_height / 2.0f + 32);
     set_sprite_size(test_sprite_2, 32, 32);
 
-    Sprite **sprites = malloc(sizeof(Sprite *) * 2);
-    sprites[0] = test_sprite;
-    sprites[1] = test_sprite_2;
+    Tile **tiles = malloc(sizeof(Tile *) * 2);
+    tiles[0] = create_tile(test_sprite);
+    tiles[1] = create_tile(test_sprite_2);
 
     while(global_state.running && !glfwWindowShouldClose(global_state.current_window))
     {
@@ -144,7 +161,7 @@ int main(int argc, char *args[])
         glClear(GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, global_spritesheet->texture);
-        update_sprites(sprites, global_state);
+        update_tiles(tiles, &global_state);
 
         glfwSwapBuffers(global_state.current_window);
         glfwPollEvents();

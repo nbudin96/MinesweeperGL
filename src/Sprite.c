@@ -283,7 +283,7 @@ void calculate_texture_offsets(Sprite *sprite)
 
 // Scales the sprite by the passed amount
 // Updates sprite's size
-void scale_sprite(Sprite *sprite, float scale_x, float scale_y)
+void set_sprite_scale(Sprite *sprite, float scale_x, float scale_y)
 {
     sprite->scale_x = scale_x;
     sprite->scale_y = scale_y;
@@ -313,7 +313,7 @@ void draw_sprite(Sprite *sprite, int screen_width, int screen_height) {
     {
         set_sprite_position(sprite, sprite->position_x, sprite->position_y);
     }
-    scale_sprite(sprite, sprite->scale_x, sprite->scale_y);
+    set_sprite_scale(sprite, sprite->scale_x, sprite->scale_y);
 
     //update uniforms
     glUniform2f(glGetUniformLocation(sprite->mesh->shader_program, "scale"), sprite->scale_x, sprite->scale_y);
