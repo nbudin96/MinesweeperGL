@@ -4,7 +4,9 @@ Tile *create_tile(Sprite *sprite)
 {
     Tile *new_tile = malloc(sizeof(Tile));
     new_tile->mouse_hover = false;
+    new_tile->mouse_clicked = false;
     new_tile->active = false;
+    new_tile->can_color = true;
     new_tile->wants_hover = true;
     new_tile->highlight_amt = 0.3f;
     new_tile->click_amt = -0.1f;
@@ -12,7 +14,7 @@ Tile *create_tile(Sprite *sprite)
     return new_tile;
 } 
 
-// TODO This does not work if the screen is resized
+// Checks if the mouse is hovering over the tile
 bool check_mouse_hover(Tile *tile, double mouse_x, double mouse_y)
 {
     float left_bounds, right_bounds, upper_bounds, lower_bounds;
@@ -30,28 +32,31 @@ bool check_mouse_hover(Tile *tile, double mouse_x, double mouse_y)
     return false;
 }
 
-void highlight_tile(Tile *tile)
-{
-    add_coloring(tile, tile->highlight_amt);
-}
-
-void unhighlight_tile(Tile *tile)
+// Resets the tile coloring
+void reset_tile_color(Tile *tile)
 {
     add_coloring(tile, 0.0f);
 }
 
-void click_tile(Tile *tile)
+// Update the tile tinting (coloring) based on the state of the tile (currently if the user clicked on it or hovered mouse)
+void update_tile_coloring(Tile *tile)
 {
-    add_coloring(tile, tile->click_amt);
-    tile->active = true;
+    if(tile->mouse_hover && tile->can_color)
+    {
+        if(tile->mouse_clicked)
+        {
+            add_coloring(tile, tile->click_amt);
+            return;
+        }
+        else{
+            add_coloring(tile, tile->highlight_amt);
+            return;
+        }
+    }
+    reset_tile_color(tile);
 }
 
-void unclick_tile(Tile *tile)
-{
-    add_coloring(tile, 0.0f);
-    tile->active = false;
-}
-
+// Sends the coloring data to the GPU shader uniform to mix with the sampled texture color
 void add_coloring(Tile *tile, float color)
 {
     glUseProgram(tile->sprite->mesh->shader_program);

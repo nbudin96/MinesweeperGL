@@ -5,7 +5,9 @@
 
 typedef struct Tile {
     bool mouse_hover;
+    bool mouse_clicked;
     bool active;
+    bool can_color;
     bool wants_hover;
     float highlight_amt;
     float click_amt;
@@ -18,4 +20,6 @@ void highlight_tile(Tile *tile);
 void unhighlight_tile(Tile *tile);
 void click_tile(Tile *tile);
 void unclick_tile(Tile *tile);
+void reset_tile_color(Tile *tile);
+void update_tile_coloring(Tile *tile);
 void add_coloring(Tile *tile, float color);

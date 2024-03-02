@@ -38,17 +38,25 @@ void GLAPIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, G
     fprintf(stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n", ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, severity, message );
     fprintf(stderr, "\n");
 }
+
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 {
     if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
         for(int i = 0; i < 2; i++)
         {
-            if(tiles[i]->mouse_hover)
+            if(check_mouse_hover(tiles[i], global_state.mouse_x, global_state.mouse_y))
             {
-                click_tile(tiles[i]);
-                printf("CLICK");
+                tiles[i]->mouse_clicked = true;
             }
+        }
+    }
+
+    if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+    {
+        for(int i = 0; i < 2; i++)
+        {
+            tiles[i]->mouse_clicked = false;
         }
     }
 }
@@ -99,26 +107,16 @@ void window_close_callback(GLFWwindow *window)
     printf("Closing window...\n");
 }
 
-void update_tiles(Tile** tiles, GameState *gamestate)
+void update_tiles(Tile** tiles, GameState *gamestate, int size)
 {
     // Get the current mouse position
     glfwGetCursorPos(gamestate->current_window, &gamestate->mouse_x, &gamestate->mouse_y);
 
-    for(int i = 0; i < 2; i++)
+    for(int i = 0; i < size; i++)
     {
         // Check for input or mouse hover
         check_mouse_hover(tiles[i], gamestate->mouse_x, gamestate->mouse_y);
-        if(!tiles[i]->active)
-        {
-            if(tiles[i]->mouse_hover)
-            {
-                highlight_tile(tiles[i]);
-            }
-            else
-            {
-                unhighlight_tile(tiles[i]);
-            }
-        }
+        update_tile_coloring(tiles[i]);
 
         //draw sprites
         draw_sprite(tiles[i]->sprite, gamestate->current_window_width, gamestate->current_window_height);
@@ -180,7 +178,7 @@ int main(int argc, char *args[])
         glClear(GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, global_spritesheet->texture);
-        update_tiles(tiles, &global_state);
+        update_tiles(tiles, &global_state, 2);
 
         glfwSwapBuffers(global_state.current_window);
         glfwPollEvents();
