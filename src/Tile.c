@@ -1,9 +1,12 @@
 #include "Tile.h"
+#include "sprite.h"
 
 Tile *create_tile(Sprite *sprite)
 {
     Tile *new_tile = malloc(sizeof(Tile));
+    new_tile->mine = false;
     new_tile->mouse_hover = false;
+    new_tile->selected = false;
     new_tile->mouse_clicked = false;
     new_tile->active = false;
     new_tile->can_color = true;
@@ -43,12 +46,13 @@ void update_tile_coloring(Tile *tile)
 {
     if(tile->mouse_hover && tile->can_color)
     {
-        if(tile->mouse_clicked)
+        if(tile->selected)
         {
             add_coloring(tile, tile->click_amt);
             return;
         }
-        else{
+        else
+        {
             add_coloring(tile, tile->highlight_amt);
             return;
         }
@@ -61,4 +65,17 @@ void add_coloring(Tile *tile, float color)
 {
     glUseProgram(tile->sprite->mesh->shader_program);
     glUniform4f(glGetUniformLocation(tile->sprite->mesh->shader_program, "hover_amt"), color, color, color, 1.0f);
+}
+
+void handle_tile_click(Tile *tile)
+{
+    // Set tile to empty square
+    if(!tile->mine)
+    {
+        set_sprite_texture(tile->sprite, 0, 0);
+    }
+    else if (tile->mine)
+    {
+        set_sprite_texture(tile->sprite, 2, 0);
+    }
 }

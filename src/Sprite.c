@@ -248,37 +248,25 @@ void set_sprite_texture(Sprite *sprite, int new_x_index, int new_y_index)
 // TODO : Add spritesheet sprite size to spritesheet struct (Replace all 16's below with this)
 void calculate_texture_offsets(Sprite *sprite)
 {
-    printf("Sprite Width: %d\n", sprite->sprite_width);
-    printf("Sprite Height: %d\n", sprite->sprite_height);
-
-    printf("New X index : %d, New Y index : %d\n\n", sprite->spritesheet_x_index, sprite->spritesheet_y_index);
     sprite->bottom_left[0] = (float)(sprite->spritesheet_x_index * 16);
     sprite->bottom_left[0] = sprite->bottom_left[0] / (float)sprite->spritesheet->width;
     sprite->bottom_left[1] = (float)(sprite->spritesheet_y_index * 16);
     sprite->bottom_left[1] = sprite->bottom_left[1] / (float)sprite->spritesheet->height;
-    printf("Sprite_bottom_left x : %f\n", sprite->bottom_left[0]);
-    printf("Sprite_bottom_left y : %f\n", sprite->bottom_left[1]);
 
     sprite->bottom_right[0] = (float)((sprite->spritesheet_x_index * 16) + 16);
     sprite->bottom_right[0] = sprite->bottom_right[0] / (float)sprite->spritesheet->width;
     sprite->bottom_right[1] = (float)(sprite->spritesheet_y_index * 16);
     sprite->bottom_right[1] = sprite->bottom_right[1] / (float)sprite->spritesheet->height;
-    printf("Sprite_bottom_right x : %f\n", sprite->bottom_right[0]);
-    printf("Sprite_bottom_right y : %f\n", sprite->bottom_right[1]);
 
     sprite->top_left[0] = (float)((sprite->spritesheet_x_index * 16));
     sprite->top_left[0] = sprite->top_left[0] / (float)sprite->spritesheet->width;
     sprite->top_left[1] = (float)((sprite->spritesheet_y_index * 16) + 16);
     sprite->top_left[1] = sprite->top_left[1] / (float)sprite->spritesheet->height;
-    printf("Sprite_top_left x : %f\n", sprite->top_left[0]);
-    printf("Sprite_top_left y : %f\n", sprite->top_left[1]);
 
     sprite->top_right[0] = (float)((sprite->spritesheet_x_index * 16) + 16);
     sprite->top_right[0] = sprite->top_right[0] / (float)sprite->spritesheet->width;
     sprite->top_right[1] = (float)((sprite->spritesheet_y_index * 16) + 16);
     sprite->top_right[1] = sprite->top_right[1] / (float)sprite->spritesheet->height;
-    printf("Sprite_top_right x : %f\n", sprite->top_right[0]);
-    printf("Sprite_top_right y : %f\n\n", sprite->top_right[1]);
 }
 
 // Scales the sprite by the passed amount
