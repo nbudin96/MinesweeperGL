@@ -118,6 +118,66 @@ void update_tiles(Tile** tiles, GameState *gamestate, int size)
     }
 }
 
+// Connects the surrounding tiles in an array that can be used to check for how close mines are
+// TODO: Continue to finish and test this
+void connect_tiles(Tile *curr_tile, Grid *game_grid, int curr_x_ind, int curr_y_ind)
+{
+    for(int row = -1; row < 2; row++)
+    {
+        if(row < game_grid->rows && row > 0)
+        {
+            for(int col = -1; col < 2; col++)
+            {
+                // Basically get 
+                if(col < game_grid->cols && col > 0 && &game_grid->tiles[(curr_y_ind * game_grid->cols) + curr_x_ind] != &curr_tile)
+                {
+                    curr_tile->adj[((3 * row) + 3) + (col + 1)] = &game_grid->tiles[(curr_y_ind * game_grid->cols) + curr_x_ind];
+                }
+                else if(&game_grid->tiles[(curr_y_ind * game_grid->cols) + curr_x_ind] != &curr_tile)
+                {
+                    printf("Same address was found!\n");
+                }
+                else
+                {
+                    return;
+                }
+            }
+        }
+    }
+}
+
+void create_game_grid(int cols, int rows, Grid *new_grid)
+{
+    new_grid->cols = 10;
+    new_grid->rows = 10;
+    new_grid->tiles = (Tile **)malloc(sizeof(Tile *) * (new_grid->cols * new_grid->rows));
+    for(int i = 0; i < new_grid->rows * new_grid->cols; i++)
+    {
+        Sprite *sprite = create_sprite(global_spritesheet, 1, 0, global_state.current_window_width, global_state.current_window_height);
+        new_grid->tiles[i] = create_tile(sprite);
+        set_sprite_size(new_grid->tiles[i]->sprite, TILE_SIZE, TILE_SIZE);
+    }
+
+    for(int row_ind = 0; row_ind < new_grid->rows; row_ind++)
+    {
+        for(int col_ind = 0; col_ind < new_grid->cols; col_ind++)
+        {
+            Tile *current_tile = new_grid->tiles[row_ind * new_grid->rows + col_ind];
+            Sprite *curr_sprite = current_tile->sprite;
+            int new_sprite_x = (int)((col_ind + 1) - ((new_grid->cols + 1) / 2)) * curr_sprite->sprite_width;
+            new_sprite_x -= curr_sprite->sprite_width / 2;
+            int new_sprite_y = (int)((row_ind + 1) - ((new_grid->rows + 1) / 2)) * curr_sprite->sprite_height;
+            new_sprite_y -= curr_sprite->sprite_height / 2;
+            set_sprite_position(curr_sprite, 
+                    (int)global_state.current_window_width / 2 + new_sprite_x, 
+                    (int)global_state.current_window_height / 2 + new_sprite_y);
+
+            // Attach all of the adjacent tiles to the current cols and rows tiles
+            connect_tiles(current_tile, new_grid, col_ind, row_ind);
+        }
+    }
+}
+
 int main(int argc, char *args[])
 {
     global_state.current_window_width = 1280;
@@ -152,30 +212,8 @@ int main(int argc, char *args[])
     //glDebugMessageCallback(opengl_message_callback, 0);
 
     // Only need to load this once btw, all of our objects will be accessing this one texture in memory
-    Spritesheet *global_spritesheet = create_spritesheet("./assets/spritesheets/minesweeper.png", 4, 3);
-    game_grid.cols = 10;
-    game_grid.rows = 10;
-    game_grid.tiles = (Tile **)malloc(sizeof(Tile *) * (game_grid.cols * game_grid.rows));
-    for(int i = 0; i < game_grid.rows * game_grid.cols; i++)
-    {
-        Sprite *sprite = create_sprite(global_spritesheet, 1, 0, global_state.current_window_width, global_state.current_window_height);
-        game_grid.tiles[i] = create_tile(sprite);
-        set_sprite_size(game_grid.tiles[i]->sprite, TILE_SIZE, TILE_SIZE);
-    }
-    for(int row_ind = 0; row_ind < game_grid.rows; row_ind++)
-    {
-        for(int col_ind = 0; col_ind < game_grid.cols; col_ind++)
-        {
-            Sprite *curr_sprite= game_grid.tiles[row_ind * game_grid.rows + col_ind]->sprite;
-            int new_sprite_x = (int)((col_ind + 1) - ((game_grid.cols + 1) / 2)) * curr_sprite->sprite_width;
-            int new_sprite_y = (int)((row_ind + 1) - ((game_grid.rows + 1) / 2)) * curr_sprite->sprite_height;
-            set_sprite_position(curr_sprite, 
-                    (int)global_state.current_window_width / 2 + new_sprite_x, 
-                    (int)global_state.current_window_height / 2 + new_sprite_y);
-        }
-    }
-
-    game_grid.tiles[0]->mine = true;
+    global_spritesheet = create_spritesheet("./assets/spritesheets/minesweeper.png", 4, 3);
+    create_game_grid(10, 10, &game_grid);
 
     while(global_state.running && !glfwWindowShouldClose(global_state.current_window))
     {

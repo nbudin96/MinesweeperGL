@@ -14,6 +14,9 @@ typedef struct Tile {
     float highlight_amt;
     float click_amt;
     Sprite *sprite;
+    int x_ind;
+    int y_ind;
+    struct Tile **adj[9];
 } Tile;
 
 Tile *create_tile(Sprite *sprite);
@@ -26,3 +29,4 @@ void reset_tile_color(Tile *tile);
 void update_tile_coloring(Tile *tile);
 void add_coloring(Tile *tile, float color);
 void handle_tile_click(Tile *tile);
+void set_indices(Tile *tile, int x, int y);

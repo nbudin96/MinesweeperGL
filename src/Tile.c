@@ -1,5 +1,5 @@
 #include "Tile.h"
-#include "sprite.h"
+#include "Sprite.h"
 
 Tile *create_tile(Sprite *sprite)
 {
@@ -14,6 +14,8 @@ Tile *create_tile(Sprite *sprite)
     new_tile->highlight_amt = 0.3f;
     new_tile->click_amt = -0.1f;
     new_tile->sprite = sprite;
+    new_tile->x_ind = 0;
+    new_tile->y_ind = 0;
     return new_tile;
 } 
 
@@ -78,4 +80,11 @@ void handle_tile_click(Tile *tile)
     {
         set_sprite_texture(tile->sprite, 2, 0);
     }
+}
+
+// Sets the indices of the tile in it's tile grid
+void set_indices(Tile *tile, int x, int y)
+{
+    tile->x_ind = x;
+    tile->y_ind = y;
 }
