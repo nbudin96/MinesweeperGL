@@ -119,27 +119,22 @@ void update_tiles(Tile** tiles, GameState *gamestate, int size)
 }
 
 // Connects the surrounding tiles in an array that can be used to check for how close mines are
-// TODO: Continue to finish and test this
-void connect_tiles(Tile *curr_tile, Grid *game_grid, int curr_x_ind, int curr_y_ind)
+void connect_tiles(Tile *curr_tile, Grid *game_grid)
 {
+    // Checks a subsection of the tilemap surrounding the "curr_tile" (8 surrounding tiles) and stores them in its adjacent tiles list
+    // This respects grid bounds, any positions that would be outside the grid are left null
     for(int row = -1; row < 2; row++)
     {
-        if(row < game_grid->rows && row > 0)
+        if(curr_tile->y_ind + row < game_grid->rows && curr_tile->y_ind + row >= 0)
         {
             for(int col = -1; col < 2; col++)
             {
-                // Basically get 
-                if(col < game_grid->cols && col > 0 && &game_grid->tiles[(curr_y_ind * game_grid->cols) + curr_x_ind] != &curr_tile)
+                int grid_adj_index = ((curr_tile->y_ind + row) * game_grid->cols) + curr_tile->x_ind + col;
+                int local_adj_index = ((3 * row) + 3) + (col + 1);
+
+                if(curr_tile->x_ind + col < game_grid->cols && curr_tile->x_ind + col >= 0 && game_grid->tiles[grid_adj_index] != curr_tile)
                 {
-                    curr_tile->adj[((3 * row) + 3) + (col + 1)] = &game_grid->tiles[(curr_y_ind * game_grid->cols) + curr_x_ind];
-                }
-                else if(&game_grid->tiles[(curr_y_ind * game_grid->cols) + curr_x_ind] != &curr_tile)
-                {
-                    printf("Same address was found!\n");
-                }
-                else
-                {
-                    return;
+                    curr_tile->adj[local_adj_index] = game_grid->tiles[grid_adj_index];
                 }
             }
         }
@@ -151,6 +146,7 @@ void create_game_grid(int cols, int rows, Grid *new_grid)
     new_grid->cols = 10;
     new_grid->rows = 10;
     new_grid->tiles = (Tile **)malloc(sizeof(Tile *) * (new_grid->cols * new_grid->rows));
+    // Loop through grid and create sprite and tile with sprite
     for(int i = 0; i < new_grid->rows * new_grid->cols; i++)
     {
         Sprite *sprite = create_sprite(global_spritesheet, 1, 0, global_state.current_window_width, global_state.current_window_height);
@@ -158,11 +154,14 @@ void create_game_grid(int cols, int rows, Grid *new_grid)
         set_sprite_size(new_grid->tiles[i]->sprite, TILE_SIZE, TILE_SIZE);
     }
 
+    // Loop through grids and cols and place the tile appropriately in the grid
     for(int row_ind = 0; row_ind < new_grid->rows; row_ind++)
     {
         for(int col_ind = 0; col_ind < new_grid->cols; col_ind++)
         {
-            Tile *current_tile = new_grid->tiles[row_ind * new_grid->rows + col_ind];
+            Tile *current_tile = new_grid->tiles[row_ind * new_grid->cols + col_ind];
+            current_tile->y_ind = row_ind;
+            current_tile->x_ind = col_ind;
             Sprite *curr_sprite = current_tile->sprite;
             int new_sprite_x = (int)((col_ind + 1) - ((new_grid->cols + 1) / 2)) * curr_sprite->sprite_width;
             new_sprite_x -= curr_sprite->sprite_width / 2;
@@ -171,9 +170,8 @@ void create_game_grid(int cols, int rows, Grid *new_grid)
             set_sprite_position(curr_sprite, 
                     (int)global_state.current_window_width / 2 + new_sprite_x, 
                     (int)global_state.current_window_height / 2 + new_sprite_y);
-
             // Attach all of the adjacent tiles to the current cols and rows tiles
-            connect_tiles(current_tile, new_grid, col_ind, row_ind);
+            connect_tiles(current_tile, new_grid);
         }
     }
 }

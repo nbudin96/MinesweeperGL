@@ -16,6 +16,10 @@ Tile *create_tile(Sprite *sprite)
     new_tile->sprite = sprite;
     new_tile->x_ind = 0;
     new_tile->y_ind = 0;
+    for(int i = 0; i < 9; i++)
+    {
+        new_tile->adj[i] = NULL;
+    }
     return new_tile;
 } 
 

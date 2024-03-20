@@ -16,7 +16,7 @@ typedef struct Tile {
     Sprite *sprite;
     int x_ind;
     int y_ind;
-    struct Tile **adj[9];
+    struct Tile *adj[9];
 } Tile;
 
 Tile *create_tile(Sprite *sprite);
