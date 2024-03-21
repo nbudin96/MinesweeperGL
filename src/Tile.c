@@ -9,7 +9,6 @@ Tile *create_tile(Sprite *sprite)
     new_tile->mouse_hover = false;
     new_tile->mouse_clicked = false;
     new_tile->active = false;
-    new_tile->revealed = false;
     new_tile->can_color = true;
     new_tile->wants_hover = true;
     new_tile->highlight_amt = 0.3f;
@@ -106,28 +105,31 @@ void set_indices(Tile *tile, int x, int y)
 
 void determine_sprite(Tile *tile)
 {
-    if(tile->mouse_clicked && !tile->mine)
+    if(tile->mouse_clicked)
     {
-        set_sprite_texture(tile->sprite, 0, 0);
-    }
-    else if(tile->mine && !tile->flagged)
-    {
-        set_sprite_texture(tile->sprite, 2, 0);
+        int row = 0;
+        int col = 0;
+        if(tile->adjacent_mine_count != 0)
+        {
+            row = 2;
+            col = (tile->adjacent_mine_count - 1) % 4;
+            if(tile->adjacent_mine_count > 4)
+            {
+                row = 1;
+            }
+        }
+        set_sprite_texture(tile->sprite, col, row);
     }
     else if(tile->flagged)
     {
         set_sprite_texture(tile->sprite, 3, 0);
     }
-    else if(tile->revealed)
+
+    else if(tile->mine && !tile->flagged)
     {
-        int row = 2;
-        int col = 5 % tile->adjacent_mine_count;
-        if(tile->adjacent_mine_count > 4)
-        {
-            row = 1;
-        }
-        set_sprite_texture(tile->sprite, col, row);
+        set_sprite_texture(tile->sprite, 2, 0);
     }
+
     else{
         set_sprite_texture(tile->sprite, 1, 0);
     }

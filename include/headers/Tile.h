@@ -6,7 +6,6 @@
 typedef struct Tile {
     bool mine;
     bool flagged;
-    bool revealed;
     bool mouse_hover;
     bool selected;
     bool mouse_clicked;

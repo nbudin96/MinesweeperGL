@@ -25,6 +25,7 @@ typedef struct GameState {
     int flags_remaining;
     int number_of_mines;
     bool first_click;
+    int grid_size;
 } GameState;
 
 typedef struct Grid {
@@ -162,10 +163,10 @@ void place_mines(Grid *game_grid, Tile *clicked_tile, int number_of_mines)
 }
 
 // calculates grid numbers and stuff based on click
-// TODO caluclate nearby mines
 void calculate_grid_change(Tile *curr_tile, Tile *checked_tiles)
 {
     int mine_count = 0;
+    curr_tile->mouse_clicked = true;
     for(int i = 0; i < 9; i++)
     {
         if(curr_tile->adj[i] != NULL && curr_tile->adj[i]->mine)
@@ -175,16 +176,14 @@ void calculate_grid_change(Tile *curr_tile, Tile *checked_tiles)
     }
     if(mine_count > 0)
     {
-        curr_tile->revealed = true;
         curr_tile->adjacent_mine_count = mine_count;
     }
     else{
-        curr_tile->mouse_clicked = true;
         for(int i = 0; i < 9; i++)
         {
             if(curr_tile->adj[i] != NULL)
             {
-                if(!curr_tile->adj[i]->mouse_clicked && !curr_tile->adj[i]->revealed)
+                if(!curr_tile->adj[i]->mouse_clicked && !curr_tile->adj[i]->mouse_clicked)
                 {
                     calculate_grid_change(curr_tile->adj[i], NULL);
                 }
@@ -286,7 +285,8 @@ int main(int argc, char *args[])
     global_state.current_window_width = 1280;
     global_state.current_window_height = 720;
     global_state.running = true;
-    global_state.number_of_mines = 15;
+    global_state.grid_size = 10;
+    global_state.number_of_mines = (int)(global_state.grid_size * global_state.grid_size * 0.2f);
     global_state.flags_remaining = global_state.number_of_mines;
     global_state.first_click = true;
 
@@ -319,7 +319,7 @@ int main(int argc, char *args[])
 
     // Only need to load this once btw, all of our objects will be accessing this one texture in memory
     global_spritesheet = create_spritesheet("./assets/spritesheets/minesweeper.png", 4, 3);
-    if(!create_game_grid(10, 10, &game_grid))
+    if(!create_game_grid(global_state.grid_size, global_state.grid_size, &game_grid))
     {
         glfwDestroyWindow(global_state.current_window);
         return 1;
