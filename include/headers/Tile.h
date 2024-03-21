@@ -5,6 +5,8 @@
 
 typedef struct Tile {
     bool mine;
+    bool flagged;
+    bool revealed;
     bool mouse_hover;
     bool selected;
     bool mouse_clicked;
@@ -16,6 +18,7 @@ typedef struct Tile {
     Sprite *sprite;
     int x_ind;
     int y_ind;
+    int adjacent_mine_count;
     struct Tile *adj[9];
 } Tile;
 
@@ -26,7 +29,9 @@ void unhighlight_tile(Tile *tile);
 void click_tile(Tile *tile);
 void unclick_tile(Tile *tile);
 void reset_tile_color(Tile *tile);
-void update_tile_coloring(Tile *tile);
+void update_tile_coloring(Tile *tile, bool mouse_button_down);
 void add_coloring(Tile *tile, float color);
-void handle_tile_click(Tile *tile);
+bool handle_tile_click(Tile *tile);
 void set_indices(Tile *tile, int x, int y);
+void flag_tile(Tile *tile, bool new_flagged_state);
+void determine_sprite(Tile *tile);

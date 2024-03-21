@@ -5,10 +5,11 @@ Tile *create_tile(Sprite *sprite)
 {
     Tile *new_tile = malloc(sizeof(Tile));
     new_tile->mine = false;
+    new_tile->flagged = false;
     new_tile->mouse_hover = false;
-    new_tile->selected = false;
     new_tile->mouse_clicked = false;
     new_tile->active = false;
+    new_tile->revealed = false;
     new_tile->can_color = true;
     new_tile->wants_hover = true;
     new_tile->highlight_amt = 0.3f;
@@ -20,6 +21,7 @@ Tile *create_tile(Sprite *sprite)
     {
         new_tile->adj[i] = NULL;
     }
+    new_tile->adjacent_mine_count = 0;
     return new_tile;
 } 
 
@@ -48,11 +50,11 @@ void reset_tile_color(Tile *tile)
 }
 
 // Update the tile tinting (coloring) based on the state of the tile (currently if the user clicked on it or hovered mouse)
-void update_tile_coloring(Tile *tile)
+void update_tile_coloring(Tile *tile, bool mouse_button_down)
 {
     if(tile->mouse_hover && tile->can_color)
     {
-        if(tile->selected)
+        if(mouse_button_down)
         {
             add_coloring(tile, tile->click_amt);
             return;
@@ -73,17 +75,26 @@ void add_coloring(Tile *tile, float color)
     glUniform4f(glGetUniformLocation(tile->sprite->mesh->shader_program, "hover_amt"), color, color, color, 1.0f);
 }
 
-void handle_tile_click(Tile *tile)
+bool handle_tile_click(Tile *tile)
 {
+    tile->mouse_clicked = true;
+    tile->selected = false;
+
     // Set tile to empty square
     if(!tile->mine)
     {
-        set_sprite_texture(tile->sprite, 0, 0);
+        return false;
     }
     else if (tile->mine)
     {
-        set_sprite_texture(tile->sprite, 2, 0);
+        return true;
     }
+    return false;
+}
+
+void flag_tile(Tile *tile, bool new_flagged_state)
+{
+    tile->flagged = new_flagged_state;
 }
 
 // Sets the indices of the tile in it's tile grid
@@ -91,4 +102,33 @@ void set_indices(Tile *tile, int x, int y)
 {
     tile->x_ind = x;
     tile->y_ind = y;
+}
+
+void determine_sprite(Tile *tile)
+{
+    if(tile->mouse_clicked && !tile->mine)
+    {
+        set_sprite_texture(tile->sprite, 0, 0);
+    }
+    else if(tile->mine && !tile->flagged)
+    {
+        set_sprite_texture(tile->sprite, 2, 0);
+    }
+    else if(tile->flagged)
+    {
+        set_sprite_texture(tile->sprite, 3, 0);
+    }
+    else if(tile->revealed)
+    {
+        int row = 2;
+        int col = 5 % tile->adjacent_mine_count;
+        if(tile->adjacent_mine_count > 4)
+        {
+            row = 1;
+        }
+        set_sprite_texture(tile->sprite, col, row);
+    }
+    else{
+        set_sprite_texture(tile->sprite, 1, 0);
+    }
 }

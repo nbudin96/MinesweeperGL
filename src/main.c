@@ -21,6 +21,10 @@ typedef struct GameState {
     float end_frame_time;
     float delta;
     double mouse_x, mouse_y;
+    bool mouse_button_down;
+    int flags_remaining;
+    int number_of_mines;
+    bool first_click;
 } GameState;
 
 typedef struct Grid {
@@ -46,62 +50,7 @@ void GLAPIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, G
     fprintf(stderr, "\n");
 }
 
-void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
-{
-    if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    {
-        for(int i = 0; i < game_grid.cols * game_grid.rows; i++)
-        {
-            if(check_mouse_hover(game_grid.tiles[i], global_state.mouse_x, global_state.mouse_y))
-            {
-                game_grid.tiles[i]->selected = true;
-            }
-        }
-    }
-
-    if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-    {
-        for(int i = 0; i < game_grid.cols * game_grid.rows; i++)
-        {
-            if(check_mouse_hover(game_grid.tiles[i], global_state.mouse_x, global_state.mouse_y))
-            {
-                game_grid.tiles[i]->mouse_clicked = true;
-                game_grid.tiles[i]->selected = false;
-                handle_tile_click(game_grid.tiles[i]);
-            }
-            else
-            {
-                game_grid.tiles[i]->selected = false;
-            }
-        }
-    }
-}
-
-void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
-{
-    // For now let's skip keyboard stuff
-    switch(key)
-    {
-        case GLFW_KEY_ESCAPE:
-            global_state.running = false;
-            break;
-        default:
-            break;
-    }
-}
-
-void window_size_callback(GLFWwindow *window, int width, int height)
-{
-    global_state.current_window_width = width;
-    global_state.current_window_height = height;
-    glViewport(0, 0, global_state.current_window_width, global_state.current_window_height);
-}
-
-void window_close_callback(GLFWwindow *window)
-{
-    printf("Closing window...\n");
-}
-
+// Updates all the tiles based on their state. Also get the current cursor position
 void update_tiles(Tile** tiles, GameState *gamestate, int size)
 {
     // Get the current mouse position
@@ -111,9 +60,11 @@ void update_tiles(Tile** tiles, GameState *gamestate, int size)
     {
         // Check for input or mouse hover
         check_mouse_hover(tiles[i], gamestate->mouse_x, gamestate->mouse_y);
-        update_tile_coloring(tiles[i]);
+        update_tile_coloring(tiles[i], global_state.mouse_button_down);
 
+        determine_sprite(tiles[i]);
         //draw sprites
+        //
         draw_sprite(tiles[i]->sprite, gamestate->current_window_width, gamestate->current_window_height);
     }
 }
@@ -141,10 +92,15 @@ void connect_tiles(Tile *curr_tile, Grid *game_grid)
     }
 }
 
-void create_game_grid(int cols, int rows, Grid *new_grid)
+bool create_game_grid(int cols, int rows, Grid *new_grid)
 {
-    new_grid->cols = 10;
-    new_grid->rows = 10;
+    if(cols < 2 || rows < 2)
+    {
+        fprintf(stderr, "ERROR: Cannot have the columns or rows of the grid be less than 2!\n");
+        return false;
+    }
+    new_grid->cols = cols;
+    new_grid->rows = rows;
     new_grid->tiles = (Tile **)malloc(sizeof(Tile *) * (new_grid->cols * new_grid->rows));
     // Loop through grid and create sprite and tile with sprite
     for(int i = 0; i < new_grid->rows * new_grid->cols; i++)
@@ -174,13 +130,165 @@ void create_game_grid(int cols, int rows, Grid *new_grid)
             connect_tiles(current_tile, new_grid);
         }
     }
+    return true;
 }
+
+void place_mines(Grid *game_grid, Tile *clicked_tile, int number_of_mines)
+{
+    int rand_x, rand_y;
+    bool tile_good;
+    while(number_of_mines > 0)
+    {
+        tile_good = true;
+        rand_x = rand() % game_grid->cols;
+        rand_y = rand() % game_grid->rows;
+        Tile *rand_tile = game_grid->tiles[rand_y * game_grid->cols + rand_x];
+        if(rand_tile != clicked_tile && !rand_tile->mine)
+        {
+            for(int i = 0; i < 9; i++)
+            {
+                if(clicked_tile->adj[i] == rand_tile) 
+                {
+                    tile_good = false;
+                }
+            }
+            if(tile_good)
+            {
+                rand_tile->mine = true;
+                number_of_mines--;
+            }
+        }
+    }
+}
+
+// calculates grid numbers and stuff based on click
+// TODO caluclate nearby mines
+void calculate_grid_change(Tile *curr_tile, Tile *checked_tiles)
+{
+    int mine_count = 0;
+    for(int i = 0; i < 9; i++)
+    {
+        if(curr_tile->adj[i] != NULL && curr_tile->adj[i]->mine)
+        {
+            mine_count++;
+        }
+    }
+    if(mine_count > 0)
+    {
+        curr_tile->revealed = true;
+        curr_tile->adjacent_mine_count = mine_count;
+    }
+    else{
+        curr_tile->mouse_clicked = true;
+        for(int i = 0; i < 9; i++)
+        {
+            if(curr_tile->adj[i] != NULL)
+            {
+                if(!curr_tile->adj[i]->mouse_clicked && !curr_tile->adj[i]->revealed)
+                {
+                    calculate_grid_change(curr_tile->adj[i], NULL);
+                }
+            }
+        }
+    }
+}
+
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+{
+    switch(button)
+    {
+        case GLFW_MOUSE_BUTTON_LEFT:
+            if(action == GLFW_PRESS) global_state.mouse_button_down = true;
+            else if(action == GLFW_RELEASE)
+            {
+                global_state.mouse_button_down = false;
+                for(int i = 0; i < game_grid.cols * game_grid.rows; i++)
+                {
+                    if(game_grid.tiles[i]->mouse_hover && !game_grid.tiles[i]->flagged)
+                    {
+                        if(global_state.first_click)
+                        {
+                            global_state.first_click = false;
+                            place_mines(&game_grid, game_grid.tiles[i], global_state.number_of_mines);
+                        }
+                        if(handle_tile_click(game_grid.tiles[i]))
+                        {
+                            global_state.lost = true;
+                            return;
+                        }
+                        else
+                        {
+                            calculate_grid_change(game_grid.tiles[i], NULL);
+                        }
+                    }
+                    else
+                    {
+                        game_grid.tiles[i]->selected = false;
+                    }
+                }
+            }
+            break;
+        case GLFW_MOUSE_BUTTON_RIGHT:
+            if(action == GLFW_PRESS) global_state.mouse_button_down = true;
+            if(action == GLFW_RELEASE)
+            {
+                global_state.mouse_button_down = false;
+                for(int i = 0; i < game_grid.cols * game_grid.rows; i++)
+                {
+                    if(game_grid.tiles[i]->mouse_hover)
+                    {
+                        if(!game_grid.tiles[i]->flagged && global_state.flags_remaining - 1 >= 0 && !game_grid.tiles[i]->mouse_clicked)
+                        {
+                            global_state.flags_remaining--;
+                            flag_tile(game_grid.tiles[i], true);
+                        }
+                        else if(game_grid.tiles[i]->flagged && !game_grid.tiles[i]->mouse_clicked)
+                        {
+                            global_state.flags_remaining++;
+                            flag_tile(game_grid.tiles[i], false);
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    switch(key)
+    {
+        case GLFW_KEY_ESCAPE:
+            global_state.running = false;
+            break;
+        default:
+            break;
+    }
+}
+
+void window_size_callback(GLFWwindow *window, int width, int height)
+{
+    global_state.current_window_width = width;
+    global_state.current_window_height = height;
+    glViewport(0, 0, global_state.current_window_width, global_state.current_window_height);
+}
+
+void window_close_callback(GLFWwindow *window)
+{
+    printf("Closing window...\n");
+}
+
 
 int main(int argc, char *args[])
 {
     global_state.current_window_width = 1280;
     global_state.current_window_height = 720;
     global_state.running = true;
+    global_state.number_of_mines = 15;
+    global_state.flags_remaining = global_state.number_of_mines;
+    global_state.first_click = true;
 
     if(!glfwInit())
     {
@@ -205,13 +313,17 @@ int main(int argc, char *args[])
     glfwSetMouseButtonCallback(global_state.current_window, mouse_button_callback);
 
     glViewport(0, 0, global_state.current_window_width, global_state.current_window_height);
-    glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
+    glClearColor(0.4f, 0.4f, 0.4f, 1.0f);
     //glEnable(GL_DEBUG_OUTPUT);
     //glDebugMessageCallback(opengl_message_callback, 0);
 
     // Only need to load this once btw, all of our objects will be accessing this one texture in memory
     global_spritesheet = create_spritesheet("./assets/spritesheets/minesweeper.png", 4, 3);
-    create_game_grid(10, 10, &game_grid);
+    if(!create_game_grid(10, 10, &game_grid))
+    {
+        glfwDestroyWindow(global_state.current_window);
+        return 1;
+    }
 
     while(global_state.running && !glfwWindowShouldClose(global_state.current_window))
     {
