@@ -6,6 +6,7 @@ Tile *create_tile(Sprite *sprite)
     Tile *new_tile = malloc(sizeof(Tile));
     new_tile->mine = false;
     new_tile->flagged = false;
+    new_tile->revealed = false;
     new_tile->mouse_hover = false;
     new_tile->mouse_clicked = false;
     new_tile->active = false;
@@ -23,6 +24,12 @@ Tile *create_tile(Sprite *sprite)
     new_tile->adjacent_mine_count = 0;
     return new_tile;
 } 
+
+void destroy_tile(Tile *tile)
+{
+    destroy_sprite(tile->sprite);
+    free(tile);
+}
 
 // Checks if the mouse is hovering over the tile
 bool check_mouse_hover(Tile *tile, double mouse_x, double mouse_y)
@@ -74,6 +81,18 @@ void add_coloring(Tile *tile, float color)
     glUniform4f(glGetUniformLocation(tile->sprite->mesh->shader_program, "hover_amt"), color, color, color, 1.0f);
 }
 
+void add_win_coloring(Tile *tile)
+{
+    glUseProgram(tile->sprite->mesh->shader_program);
+    glUniform4f(glGetUniformLocation(tile->sprite->mesh->shader_program, "hover_amt"), 0.0f, 0.4f, 0.0f, 1.0f);
+}
+
+void add_loss_coloring(Tile *tile)
+{
+    glUseProgram(tile->sprite->mesh->shader_program);
+    glUniform4f(glGetUniformLocation(tile->sprite->mesh->shader_program, "hover_amt"), 0.4f, 0.0f, 0.0f, 1.0f);
+}
+
 bool handle_tile_click(Tile *tile)
 {
     tile->mouse_clicked = true;
@@ -105,7 +124,7 @@ void set_indices(Tile *tile, int x, int y)
 
 void determine_sprite(Tile *tile)
 {
-    if(tile->mouse_clicked)
+    if(tile->mouse_clicked && !tile->mine)
     {
         int row = 0;
         int col = 0;
@@ -124,8 +143,7 @@ void determine_sprite(Tile *tile)
     {
         set_sprite_texture(tile->sprite, 3, 0);
     }
-
-    else if(tile->mine && !tile->flagged)
+    else if(tile->mine && tile->revealed)
     {
         set_sprite_texture(tile->sprite, 2, 0);
     }

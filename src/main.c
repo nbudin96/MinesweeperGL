@@ -51,19 +51,68 @@ void GLAPIENTRY opengl_message_callback(GLenum source, GLenum type, GLuint id, G
     fprintf(stderr, "\n");
 }
 
+void reset_game(GameState *gamestate)
+{
+    global_state.current_window_width = 1280;
+    global_state.current_window_height = 720;
+    global_state.running = true;
+    global_state.grid_size = 10;
+    global_state.number_of_mines = (int)(global_state.grid_size * global_state.grid_size * 0.2f);
+    global_state.flags_remaining = global_state.number_of_mines;
+    global_state.first_click = true;
+
+}
+
 // Updates all the tiles based on their state. Also get the current cursor position
 void update_tiles(Tile** tiles, GameState *gamestate, int size)
 {
     // Get the current mouse position
     glfwGetCursorPos(gamestate->current_window, &gamestate->mouse_x, &gamestate->mouse_y);
 
+    int correct_tiles = 0;
+
     for(int i = 0; i < size; i++)
     {
-        // Check for input or mouse hover
-        check_mouse_hover(tiles[i], gamestate->mouse_x, gamestate->mouse_y);
-        update_tile_coloring(tiles[i], global_state.mouse_button_down);
+        if(!gamestate->win && !gamestate->lost)
+        {
+            // Check for input or mouse hover
+            check_mouse_hover(tiles[i], gamestate->mouse_x, gamestate->mouse_y);
+            update_tile_coloring(tiles[i], global_state.mouse_button_down);
+            if(tiles[i]->mine && tiles[i]->flagged)
+            {
+                correct_tiles++;
+            }
+
+            if(correct_tiles == gamestate->number_of_mines)
+            {
+                gamestate->win = true;
+            }
+        }
+        else if (gamestate->win)
+        {
+            if(tiles[i]->flagged)
+            {
+                add_win_coloring(tiles[i]);
+            }
+            else{
+                reset_tile_color(tiles[i]);
+            }
+
+        } 
+        else if (gamestate->lost) 
+        {
+            if(tiles[i]->mine)
+            {
+                tiles[i]->revealed = true;
+                add_loss_coloring(tiles[i]);
+            }
+            else{
+                reset_tile_color(tiles[i]);
+            }
+        }
 
         determine_sprite(tiles[i]);
+
         //draw sprites
         //
         draw_sprite(tiles[i]->sprite, gamestate->current_window_width, gamestate->current_window_height);
@@ -131,6 +180,17 @@ bool create_game_grid(int cols, int rows, Grid *new_grid)
             connect_tiles(current_tile, new_grid);
         }
     }
+    return true;
+}
+
+bool destroy_grid(Grid *game_grid)
+{
+    for(int i = 0; i < game_grid->cols * game_grid->rows; i++)
+    {
+        destroy_tile(game_grid->tiles[i]);
+        game_grid->tiles[i] = NULL;
+    }
+    free(game_grid->tiles);
     return true;
 }
 
@@ -262,6 +322,12 @@ void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int acti
         case GLFW_KEY_ESCAPE:
             global_state.running = false;
             break;
+        case GLFW_KEY_R:
+            if(action == GLFW_RELEASE)
+            {
+                global_state.restart = true;
+            }
+            break;
         default:
             break;
     }
@@ -279,12 +345,12 @@ void window_close_callback(GLFWwindow *window)
     printf("Closing window...\n");
 }
 
-
 int main(int argc, char *args[])
 {
     global_state.current_window_width = 1280;
     global_state.current_window_height = 720;
     global_state.running = true;
+    global_state.restart = false;
     global_state.grid_size = 10;
     global_state.number_of_mines = (int)(global_state.grid_size * global_state.grid_size * 0.2f);
     global_state.flags_remaining = global_state.number_of_mines;
@@ -327,6 +393,17 @@ int main(int argc, char *args[])
 
     while(global_state.running && !glfwWindowShouldClose(global_state.current_window))
     {
+        if(global_state.restart == true)
+        {
+            global_state.restart = false;
+            destroy_grid(&game_grid);
+            global_state.flags_remaining = global_state.number_of_mines;
+            global_state.first_click = true;
+            global_state.win = false;
+            global_state.lost = false;
+            create_game_grid(global_state.grid_size, global_state.grid_size, &game_grid);
+        }
+
         global_state.start_frame_time = glfwGetTime();
         glClear(GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
@@ -340,5 +417,6 @@ int main(int argc, char *args[])
     }
 
     glfwDestroyWindow(global_state.current_window);
+    free_spritesheet(global_spritesheet);
     return 0;
 }

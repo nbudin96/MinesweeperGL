@@ -6,6 +6,7 @@
 typedef struct Tile {
     bool mine;
     bool flagged;
+    bool revealed;
     bool mouse_hover;
     bool selected;
     bool mouse_clicked;
@@ -22,6 +23,7 @@ typedef struct Tile {
 } Tile;
 
 Tile *create_tile(Sprite *sprite);
+void destroy_tile(Tile *tile);
 bool check_mouse_hover(Tile *tile, double mouse_x, double mouse_y);
 void highlight_tile(Tile *tile);
 void unhighlight_tile(Tile *tile);
@@ -30,6 +32,8 @@ void unclick_tile(Tile *tile);
 void reset_tile_color(Tile *tile);
 void update_tile_coloring(Tile *tile, bool mouse_button_down);
 void add_coloring(Tile *tile, float color);
+void add_win_coloring(Tile *tile);
+void add_loss_coloring(Tile *tile);
 bool handle_tile_click(Tile *tile);
 void set_indices(Tile *tile, int x, int y);
 void flag_tile(Tile *tile, bool new_flagged_state);

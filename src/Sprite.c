@@ -62,6 +62,11 @@ Mesh *create_mesh(Sprite *sprite)
     return new_mesh;
 }
 
+void destroy_mesh(Mesh *mesh)
+{
+    free(mesh);
+}
+
 void compile_shaders(Mesh *mesh)
 {
     //SHADERS
@@ -178,6 +183,12 @@ Sprite *create_sprite(Spritesheet *spritesheet, int x_index, int y_index, int sc
     glUniform1i(glGetUniformLocation(new_sprite->mesh->shader_program, "current_texture"), 0); // set it manually
                                                                                                //
     return new_sprite;
+}
+
+void destroy_sprite(Sprite *sprite)
+{
+    destroy_mesh(sprite->mesh);
+    free(sprite);
 }
 
 // Calculates indv. size of a sprite located in the spritesheet and stores in Sprite struct

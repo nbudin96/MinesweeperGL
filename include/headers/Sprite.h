@@ -42,6 +42,7 @@ typedef struct Sprite {
 
 // Opengl Mesh stuff
 Mesh *create_mesh(Sprite *sprite);
+void destroy_mesh(Mesh *mesh);
 void change_texture_coordinates(Sprite *sprite, int new_x_index, int new_y_index);
 void compile_shaders(Mesh *mesh);
 
@@ -50,6 +51,7 @@ Spritesheet *create_spritesheet(const char *filename, int cols, int rows);
 unsigned char *load_spritesheet(Spritesheet *spritesheet, const char *filename);
 void free_spritesheet(Spritesheet *spritesheet);
 Sprite *create_sprite(Spritesheet *spritesheet, int x_index, int y_index, int screen_width, int screen_height);
+void destroy_sprite(Sprite *sprite);
 void calculate_sprite_size(Sprite *sprite);
 void set_sprite_size(Sprite *sprite, int pixels_x, int pixels_y);
 void set_sprite_texture(Sprite *sprite, int new_x_index, int new_y_index); 
