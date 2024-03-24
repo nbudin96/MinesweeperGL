@@ -3,3 +3,4 @@
 -IC:\cygwin64\usr\include\w32api
 -IC:\MinGW\include
 -IC:\Users\noahb\Programming\MinesweeperGL\include\headers
+-IC:\home\noah\Programming\MinesweeperGL\include\headers

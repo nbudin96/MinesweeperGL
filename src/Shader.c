@@ -32,6 +32,7 @@ int read_shader_file(Shader *shader, const char* filename)
     }
 
     shader->code_string = buffer;
+    buffer = NULL;
     fclose(file_ptr);
     return 0;
 }
@@ -41,5 +42,7 @@ void compile_shader(Shader *shader)
     shader->ID = glCreateShader(shader->shader_type);
     glShaderSource(shader->ID, 1, &shader->code_string, NULL);
     glCompileShader(shader->ID);
+    free((char*)shader->code_string);
+    shader->code_string = NULL;
 }
 
