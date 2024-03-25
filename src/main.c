@@ -323,6 +323,7 @@ void keyboard_input_callback(GLFWwindow *window, int key, int scancode, int acti
             global_state.running = false;
             break;
         case GLFW_KEY_R:
+            global_state.restart = true; // Delete
             if(action == GLFW_RELEASE)
             {
                 global_state.restart = true;

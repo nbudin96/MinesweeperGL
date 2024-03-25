@@ -46,3 +46,8 @@ void compile_shader(Shader *shader)
     shader->code_string = NULL;
 }
 
+void delete_shader(Shader *shader)
+{
+    glDeleteShader(shader->ID);
+}
+

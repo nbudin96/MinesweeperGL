@@ -64,6 +64,13 @@ Mesh *create_mesh(Sprite *sprite)
 
 void destroy_mesh(Mesh *mesh)
 {
+    glDeleteBuffers(1, &mesh->vertex_buffer_object);
+    glDeleteBuffers(1, &mesh->vertex_elements);
+    glDeleteBuffers(1, &mesh->texture_coordinate_buffer);
+    glDeleteVertexArrays(1, &mesh->vertex_array_object);
+    delete_shader(&mesh->vertex_shader);
+    delete_shader(&mesh->fragment_shader);
+    glDeleteProgram(mesh->shader_program);
     free(mesh);
 }
 

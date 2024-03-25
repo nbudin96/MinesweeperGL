@@ -14,3 +14,4 @@ typedef struct Shader {
 
 int read_shader_file(Shader *shader, const char* filename);
 void compile_shader(Shader *shader);
+void delete_shader(Shader *shader);
